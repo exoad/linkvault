@@ -97,6 +97,7 @@ class _AnimatedBookmarkListState extends State<AnimatedBookmarkList> {
   Widget build(BuildContext context) {
     return AnimatedList(
       key: _listKey,
+      clipBehavior: Clip.none,
       padding: widget.padding,
       initialItemCount: _items.length,
       itemBuilder: (context, index, animation) {

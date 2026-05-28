@@ -1,7 +1,7 @@
 name: linkvault
 description: "Local links vault"
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ^3.12.0
@@ -43,6 +43,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/branding/
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans.ttf
 
 # Regenerate: python3 tool/generate_branding.py
 flutter_launcher_icons:

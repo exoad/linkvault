@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/bookmark.dart';
 import '../models/fetch_status.dart';
 import '../theme/app_motion.dart';
+import '../theme/linkvault_design.dart';
+import '../theme/linkvault_typography.dart';
+import 'linkvault_surface.dart';
 
 class BookmarkCard extends StatefulWidget {
   const BookmarkCard({
@@ -26,6 +29,7 @@ class _BookmarkCardState extends State<BookmarkCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final motion = motionEnabled(context);
 
     return Semantics(
@@ -35,69 +39,64 @@ class _BookmarkCardState extends State<BookmarkCard> {
         scale: motion && _pressed ? 0.98 : 1,
         duration: AppMotion.fast,
         curve: AppMotion.standard,
-        child: Card(
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: widget.onTap,
-            onHighlightChanged: motion
-                ? (value) => setState(() => _pressed = value)
-                : null,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _DomainAvatar(url: widget.bookmark.url),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AnimatedSwitcher(
-                          duration: AppMotion.normal,
-                          switchInCurve: AppMotion.decelerate,
-                          switchOutCurve: AppMotion.standard,
-                          transitionBuilder: (child, animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.15),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: Text(
-                            widget.bookmark.title,
-                            key: ValueKey(widget.bookmark.title),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+        child: LinkvaultSurface(
+          onTap: widget.onTap,
+          onHighlightChanged: motion
+              ? (value) => setState(() => _pressed = value)
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.all(LinkvaultDesign.spaceMd),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _DomainAvatar(url: widget.bookmark.url),
+                const SizedBox(width: LinkvaultDesign.spaceMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: AppMotion.normal,
+                        switchInCurve: AppMotion.decelerate,
+                        switchOutCurve: AppMotion.standard,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.15),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.bookmark.url,
+                          );
+                        },
+                        child: Text(
+                          widget.bookmark.title,
+                          key: ValueKey(widget.bookmark.title),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: LinkvaultDesign.spaceXs),
+                      Text(
+                        widget.bookmark.url,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: LinkvaultTypography.meta(scheme),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _StatusTrailing(
-                    bookmark: widget.bookmark,
-                    onFetchTitle: widget.onFetchTitle,
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: LinkvaultDesign.spaceSm),
+                _StatusTrailing(
+                  bookmark: widget.bookmark,
+                  onFetchTitle: widget.onFetchTitle,
+                ),
+              ],
             ),
           ),
         ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Material 3 grouped settings block: label + tonal card.
+import '../theme/linkvault_typography.dart';
+import 'linkvault_surface.dart';
+
+/// Material 3 grouped settings block: label + flat bordered surface.
 class SettingsGroup extends StatelessWidget {
   const SettingsGroup({
     super.key,
@@ -14,7 +17,6 @@ class SettingsGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,13 +25,10 @@ class SettingsGroup extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title,
-            style: textTheme.titleSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
+            style: LinkvaultTypography.sectionLabel(scheme),
           ),
         ),
-        Card(
+        LinkvaultSurface(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: _withDividers(children),

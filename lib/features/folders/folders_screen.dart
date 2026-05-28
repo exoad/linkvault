@@ -232,6 +232,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
           final linkLabel = linkCount == 1 ? '1 link saved' : '$linkCount links saved';
 
           return ListView.separated(
+            clipBehavior: Clip.none,
             padding: EdgeInsets.fromLTRB(16, 4, 16, 88 + bottomInset),
             itemCount: folders.length + 1,
             separatorBuilder: (_, index) =>

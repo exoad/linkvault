@@ -6,6 +6,8 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../services/apk_installer.dart';
 import '../../services/app_update_service.dart';
+import '../../theme/linkvault_design.dart';
+import '../../widgets/linkvault_surface.dart';
 import '../../widgets/settings_group.dart';
 
 class UpdateSection extends StatefulWidget {
@@ -221,31 +223,29 @@ class _UpdateSectionState extends State<UpdateSection> {
         if (updateAvailable)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Material(
+            child: LinkvaultSurface(
               color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Version ${manifest.versionName} available',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: _downloading
-                          ? null
-                          : () => _downloadAndInstall(manifest),
-                      child: const Text('Download and install'),
-                    ),
-                  ],
-                ),
+              borderRadius: LinkvaultDesign.radiusControl,
+              padding: const EdgeInsets.all(LinkvaultDesign.spaceLg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Version ${manifest.versionName} available',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimaryContainer,
+                        ),
+                  ),
+                  const SizedBox(height: LinkvaultDesign.spaceMd),
+                  FilledButton(
+                    onPressed: _downloading
+                        ? null
+                        : () => _downloadAndInstall(manifest),
+                    child: const Text('Download and install'),
+                  ),
+                ],
               ),
             ),
           ),

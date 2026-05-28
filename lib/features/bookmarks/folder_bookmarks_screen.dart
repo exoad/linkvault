@@ -11,6 +11,8 @@ import '../../models/folder.dart';
 import '../../models/layout_mode.dart';
 import '../../services/layout_preferences.dart';
 import '../../widgets/bookmark_card.dart';
+import '../../theme/linkvault_design.dart';
+import '../../widgets/linkvault_surface.dart';
 import '../../widgets/phosphor_app_icon.dart';
 import '../../widgets/layout_mode_toggle.dart';
 import '../../widgets/paste_link_fab.dart';
@@ -110,45 +112,40 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
                 padding: const EdgeInsets.all(24),
                 child: StaggeredEmptyState(
                   children: [
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 28,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PhosphorIcon(
-                              PhosphorIcons.linkBreak,
-                              size: 40,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No links yet',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Paste a link to save it here.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
-                        ),
+                    LinkvaultSurface(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 28,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PhosphorIcon(
+                            PhosphorIcons.linkBreak,
+                            size: 40,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                          const SizedBox(height: LinkvaultDesign.spaceLg),
+                          Text(
+                            'No links yet',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: LinkvaultDesign.spaceSm),
+                          Text(
+                            'Paste a link to save it here.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -178,8 +175,8 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
                 : MasonryGridView.count(
                     padding: EdgeInsets.fromLTRB(16, 8, 16, 88 + bottomInset),
                     crossAxisCount: 2,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
                     itemCount: bookmarks.length,
                     itemBuilder: (context, index) {
                       final bookmark = bookmarks[index];
