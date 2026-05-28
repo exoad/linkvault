@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemePreferences {
   static const _themeModeKey = 'theme_mode';
-  static const _useDynamicColorKey = 'use_dynamic_color';
+  static const _edgeGlowIndexKey = 'edge_glow_index';
   static const _seedColorKey = 'seed_color_argb';
 
   Future<ThemeMode> getThemeMode() async {
@@ -26,24 +26,21 @@ class ThemePreferences {
     await prefs.setString(_themeModeKey, stored);
   }
 
-  Future<bool> getUseDynamicColor() async {
+  Future<int?> getEdgeGlowIndex() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_useDynamicColorKey) ?? true;
+    if (!prefs.containsKey(_edgeGlowIndexKey)) return null;
+    return prefs.getInt(_edgeGlowIndexKey);
   }
 
-  Future<void> setUseDynamicColor(bool value) async {
+  Future<void> setEdgeGlowIndex(int index) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_useDynamicColorKey, value);
+    await prefs.setInt(_edgeGlowIndexKey, index);
   }
 
-  Future<Color?> getSeedColor() async {
+  /// Legacy seed color from before preset-based glow.
+  Future<Color?> getLegacySeedColor() async {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey(_seedColorKey)) return null;
     return Color(prefs.getInt(_seedColorKey)!);
-  }
-
-  Future<void> setSeedColor(Color color) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_seedColorKey, color.toARGB32());
   }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../models/folder.dart';
 import '../services/theme_preferences.dart';
+import 'edge_glow_palette.dart';
+import 'linkvault_accent.dart';
 
 class ThemeController extends ChangeNotifier {
   ThemeController({ThemePreferences? preferences})
@@ -10,18 +11,24 @@ class ThemeController extends ChangeNotifier {
   final ThemePreferences _preferences;
 
   ThemeMode _themeMode = ThemeMode.system;
-  bool _useDynamicColor = true;
-  Color _seedColor = const Color(FolderModel.defaultColorValue);
+  int _edgeGlowIndex = EdgeGlowPalette.defaultIndex;
 
   ThemeMode get themeMode => _themeMode;
-  bool get useDynamicColor => _useDynamicColor;
-  Color get seedColor => _seedColor;
+  int get edgeGlowIndex => _edgeGlowIndex;
+  EdgeGlowPreset get edgeGlowPreset => EdgeGlowPalette.presetAt(_edgeGlowIndex);
+  LinkvaultAccent get accent => edgeGlowPreset.toAccent();
 
   Future<void> load() async {
     _themeMode = await _preferences.getThemeMode();
-    _useDynamicColor = await _preferences.getUseDynamicColor();
-    final storedSeed = await _preferences.getSeedColor();
-    if (storedSeed != null) _seedColor = storedSeed;
+    final storedIndex = await _preferences.getEdgeGlowIndex();
+    if (storedIndex != null) {
+      _edgeGlowIndex = storedIndex;
+    } else {
+      final legacy = await _preferences.getLegacySeedColor();
+      if (legacy != null) {
+        _edgeGlowIndex = EdgeGlowPalette.indexForColor(legacy);
+      }
+    }
     notifyListeners();
   }
 
@@ -31,15 +38,9 @@ class ThemeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setUseDynamicColor(bool value) async {
-    _useDynamicColor = value;
-    await _preferences.setUseDynamicColor(value);
-    notifyListeners();
-  }
-
-  Future<void> setSeedColor(Color color) async {
-    _seedColor = color;
-    await _preferences.setSeedColor(color);
+  Future<void> setEdgeGlowIndex(int index) async {
+    _edgeGlowIndex = index.clamp(0, EdgeGlowPalette.presets.length - 1);
+    await _preferences.setEdgeGlowIndex(_edgeGlowIndex);
     notifyListeners();
   }
 }

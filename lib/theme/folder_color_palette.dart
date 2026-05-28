@@ -21,21 +21,3 @@ abstract final class FolderColorPalette {
     Color(0xFF00ACC1),
   ];
 }
-
-/// Preset theme seed colors for app appearance settings.
-abstract final class ThemeSeedPalette {
-  static const List<Color> choices = [
-    Color(0xFF6750A4),
-    Color(0xFF1976D2),
-    Color(0xFF00695C),
-    Color(0xFF2E7D32),
-    Color(0xFFE65100),
-    Color(0xFFC62828),
-    Color(0xFFAD1457),
-    Color(0xFF4527A0),
-    Color(0xFF37474F),
-    Color(0xFF1565C0),
-    Color(0xFF00838F),
-    Color(0xFF6A1B9A),
-  ];
-}

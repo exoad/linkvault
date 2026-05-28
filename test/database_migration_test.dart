@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linkvault/data/app_database.dart';
+import 'package:linkvault/data/database_migrations.dart';
 import 'package:linkvault/models/fetch_status.dart';
 import 'package:linkvault/models/folder.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
@@ -87,5 +88,102 @@ void main() {
     expect(bookmarks.first.url, 'https://keep.me');
 
     await db.close();
+  });
+
+  test('upgrade from schema 2 to 3 adds notes table', () async {
+    final underlying = sqlite.sqlite3.openInMemory();
+
+    underlying.execute('''
+      CREATE TABLE folders (
+        id TEXT NOT NULL PRIMARY KEY,
+        name TEXT NOT NULL,
+        is_system INTEGER NOT NULL DEFAULT 0 CHECK (is_system IN (0, 1)),
+        color_value INTEGER NOT NULL DEFAULT 4283215692,
+        icon_name TEXT NOT NULL DEFAULT 'folder',
+        is_locked INTEGER NOT NULL DEFAULT 0 CHECK (is_locked IN (0, 1)),
+        pin_salt TEXT,
+        pin_hash TEXT,
+        created_at INTEGER NOT NULL
+      );
+    ''');
+    underlying.execute('''
+      CREATE TABLE bookmarks (
+        id TEXT NOT NULL PRIMARY KEY,
+        folder_id TEXT NOT NULL REFERENCES folders(id),
+        url TEXT NOT NULL,
+        title TEXT NOT NULL,
+        fetch_status TEXT NOT NULL,
+        fetched_at INTEGER,
+        created_at INTEGER NOT NULL
+      );
+    ''');
+
+    underlying.userVersion = 2;
+
+    final upgraded = AppDatabase.forTesting(
+      NativeDatabase.opened(underlying),
+    );
+    await upgraded.ensureUnfiled();
+
+    final note = await upgraded.insertNote(title: 'Hello', body: 'World');
+    expect(note.title, 'Hello');
+    expect(note.body, 'World');
+
+    final count = await upgraded.watchNoteCount().first;
+    expect(count, 1);
+
+    await upgraded.close();
+  });
+
+  test('upgrade from schema 1 to 3 runs stepwise and preserves data', () async {
+    final underlying = sqlite.sqlite3.openInMemory();
+
+    underlying.execute('''
+      CREATE TABLE folders (
+        id TEXT NOT NULL PRIMARY KEY,
+        name TEXT NOT NULL,
+        is_system INTEGER NOT NULL DEFAULT 0 CHECK (is_system IN (0, 1)),
+        created_at INTEGER NOT NULL
+      );
+    ''');
+    underlying.execute('''
+      CREATE TABLE bookmarks (
+        id TEXT NOT NULL PRIMARY KEY,
+        folder_id TEXT NOT NULL REFERENCES folders(id),
+        url TEXT NOT NULL,
+        title TEXT NOT NULL,
+        fetch_status TEXT NOT NULL,
+        fetched_at INTEGER,
+        created_at INTEGER NOT NULL
+      );
+    ''');
+
+    const folderId = 'folder-1';
+    const bookmarkId = 'bookmark-1';
+    final createdAt = DateTime.utc(2024, 6, 1).millisecondsSinceEpoch;
+
+    underlying.execute(
+      "INSERT INTO folders (id, name, is_system, created_at) "
+      "VALUES ('$folderId', 'Work', 0, $createdAt);",
+    );
+    underlying.execute(
+      "INSERT INTO bookmarks (id, folder_id, url, title, fetch_status, created_at) "
+      "VALUES ('$bookmarkId', '$folderId', 'https://example.com', 'Example', 'success', $createdAt);",
+    );
+
+    underlying.userVersion = 1;
+
+    final upgraded = AppDatabase.forTesting(
+      NativeDatabase.opened(underlying),
+    );
+    expect(upgraded.schemaVersion, DatabaseMigrations.targetSchemaVersion);
+
+    final bookmark = await upgraded.getBookmarkById(bookmarkId);
+    expect(bookmark, isNotNull);
+
+    final note = await upgraded.insertNote(title: 'After upgrade', body: 'OK');
+    expect(note.title, 'After upgrade');
+
+    await upgraded.close();
   });
 }

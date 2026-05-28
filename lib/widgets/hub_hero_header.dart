@@ -8,7 +8,7 @@ class HubHeroHeader extends StatelessWidget {
   const HubHeroHeader({
     super.key,
     this.title = 'Your hub',
-    this.subtitle = 'Links saved on this device · more coming',
+    this.subtitle = 'Apps on this device · open one below',
     this.statLabel,
   });
 
@@ -49,14 +49,13 @@ class _StatChip extends StatelessWidget {
         vertical: LinkvaultDesign.spaceSm + 2,
       ),
       decoration: BoxDecoration(
-        color: scheme.primaryContainer.withValues(alpha: 0.65),
+        color: scheme.surfaceContainerHigh,
         borderRadius: LinkvaultDesign.radiusControl,
-        border: LinkvaultDesign.accentBorder(scheme),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: scheme.onPrimaryContainer,
+              color: scheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
       ),

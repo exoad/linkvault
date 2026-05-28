@@ -3,7 +3,6 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../animations/animated_bookmark_list.dart';
-import '../../animations/layout_switcher.dart';
 import '../../animations/list_entrance.dart';
 import '../../app_scope.dart';
 import '../../models/bookmark.dart';
@@ -15,7 +14,7 @@ import '../../theme/linkvault_design.dart';
 import '../../widgets/linkvault_surface.dart';
 import '../../widgets/phosphor_app_icon.dart';
 import '../../widgets/layout_mode_toggle.dart';
-import '../../widgets/linkvault_ambient_background.dart';
+import '../../widgets/linkvault_ambient_background.dart' show LinkvaultAmbientScaffold;
 import '../../widgets/paste_link_fab.dart';
 import '../../theme/linkvault_typography.dart';
 import '../add_link/add_link_sheet.dart';
@@ -81,7 +80,7 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
         ? '1 link'
         : '${widget.folder.bookmarkCount} links';
 
-    return Scaffold(
+    return LinkvaultAmbientScaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -114,8 +113,7 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
           LayoutModeToggle(mode: _layoutMode, onChanged: _setLayoutMode),
         ],
       ),
-      body: LinkvaultAmbientBackground(
-        child: StreamBuilder<List<BookmarkModel>>(
+      body: StreamBuilder<List<BookmarkModel>>(
         stream: repo.watchBookmarks(widget.folder.id),
         builder: (context, snapshot) {
           final bookmarks = snapshot.data ?? [];
@@ -137,12 +135,11 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
                         children: [
                           CircleAvatar(
                             radius: 36,
-                            backgroundColor:
-                                scheme.primaryContainer.withValues(alpha: 0.8),
+                            backgroundColor: scheme.surfaceContainerHighest,
                             child: PhosphorIcon(
                               PhosphorIcons.linkBreak,
                               size: 36,
-                              color: scheme.onPrimaryContainer,
+                              color: scheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: LinkvaultDesign.spaceXl),
@@ -182,40 +179,36 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
             );
           }
 
-          return LayoutSwitcher(
-            layoutKey: _layoutMode,
-            child: _layoutMode == LayoutMode.list
-                ? AnimatedBookmarkList(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
-                      16,
-                      88 + bottomInset,
-                    ),
-                    bookmarks: bookmarks,
-                    itemBuilder: (context, bookmark, animation) =>
-                        _bookmarkCard(context, bookmark),
-                  )
-                : MasonryGridView.count(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
-                      16,
-                      88 + bottomInset,
-                    ),
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    itemCount: bookmarks.length,
-                    itemBuilder: (context, index) {
-                      final bookmark = bookmarks[index];
-                      return _bookmarkCard(context, bookmark)
-                          .listEntrance(context, index: index);
-                    },
-                  ),
+          final contentPadding = EdgeInsets.fromLTRB(
+            16,
+            MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+            16,
+            88 + bottomInset,
+          );
+
+          if (_layoutMode == LayoutMode.list) {
+            return AnimatedBookmarkList(
+              key: const ValueKey('bookmark-list'),
+              padding: contentPadding,
+              bookmarks: bookmarks,
+              itemBuilder: (context, bookmark, animation) =>
+                  _bookmarkCard(context, bookmark),
+            );
+          }
+
+          return MasonryGridView.count(
+            key: const ValueKey('bookmark-grid'),
+            padding: contentPadding,
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            itemCount: bookmarks.length,
+            itemBuilder: (context, index) {
+              final bookmark = bookmarks[index];
+              return _bookmarkCard(context, bookmark);
+            },
           );
         },
-      ),
       ),
       floatingActionButton: PasteLinkFab(
         onPressed: () => showAddLinkSheet(

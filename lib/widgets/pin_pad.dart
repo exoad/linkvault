@@ -70,7 +70,7 @@ class _PinPadState extends State<PinPad> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: filled
-                    ? theme.colorScheme.primary
+                    ? theme.colorScheme.onSurface
                     : theme.colorScheme.surfaceContainerHighest,
               ),
             );

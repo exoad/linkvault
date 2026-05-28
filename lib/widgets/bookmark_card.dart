@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/bookmark.dart';
 import '../models/fetch_status.dart';
 import '../theme/app_motion.dart';
+import '../theme/linkvault_accent.dart';
 import '../theme/linkvault_design.dart';
 import '../theme/linkvault_typography.dart';
 import 'linkvault_surface.dart';
@@ -121,16 +122,20 @@ class _DomainAvatar extends StatelessWidget {
     }
   }
 
-  Color _tint(ColorScheme scheme) {
+  Color _tint(ColorScheme scheme, LinkvaultAccent? accent) {
     final code = _initial.codeUnitAt(0);
-    final hues = [scheme.primary, scheme.secondary, scheme.tertiary];
-    return hues[code % hues.length];
+    if (accent != null) {
+      final hues = [accent.primary, accent.secondary, accent.tertiary];
+      return hues[code % hues.length];
+    }
+    return scheme.onSurface.withValues(alpha: 0.5);
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final tint = _tint(scheme);
+    final accent = Theme.of(context).extension<LinkvaultAccent>();
+    final tint = _tint(scheme, accent);
     return CircleAvatar(
       radius: 26,
       backgroundColor: tint.withValues(alpha: 0.22),

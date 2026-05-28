@@ -6,8 +6,22 @@ import 'app_database.dart';
 ///
 /// **Policy:** upgrades are additive only (new columns/tables, data copies).
 /// Never call [Migrator.drop], [Migrator.deleteTable], or recreate the DB here.
-/// Destructive resets belong only in explicit user actions or dev-only tools.
+///
+/// **Automatic upgrades:** [AppDatabase] calls [migrateStepwise] from
+/// `MigrationStrategy.onUpgrade` whenever an installed DB has
+/// `user_version < schemaVersion`. Users do not need to take any action.
 abstract final class DatabaseMigrations {
+  /// Keep in sync with [AppDatabase.schemaVersion].
+  static const int targetSchemaVersion = 3;
+
+  /// Target versions that have a registered upgrade step (2 … [targetSchemaVersion]).
+  static final Map<int, Future<void> Function(Migrator migrator)> steps = {
+    2: _toV2,
+    3: _toV3,
+  };
+
+  static bool hasStepForVersion(int version) => steps.containsKey(version);
+
   /// Runs migrations one version at a time: `from → from+1 → … → to`.
   static Future<void> migrateStepwise(
     Migrator migrator,
@@ -15,22 +29,17 @@ abstract final class DatabaseMigrations {
     int to,
   ) async {
     if (from >= to) return;
-    for (var version = from; version < to; version++) {
-      await _migrate(migrator, version, version + 1);
-    }
-  }
 
-  static Future<void> _migrate(Migrator m, int from, int to) async {
-    if (to <= 1) return;
-
-    switch (to) {
-      case 2:
-        await _toV2(m);
-      default:
+    for (var version = from + 1; version <= to; version++) {
+      final step = steps[version];
+      if (step == null) {
         throw StateError(
-          'Missing migration to schema $to (from $from). '
-          'Add a step in database_migrations.dart before shipping.',
+          'Missing migration to schema $version (from $from, target $to). '
+          'Register steps[$version] in database_migrations.dart and bump '
+          'AppDatabase.schemaVersion before shipping.',
         );
+      }
+      await step(migrator);
     }
   }
 
@@ -42,5 +51,10 @@ abstract final class DatabaseMigrations {
     await m.addColumn(db.folders, db.folders.isLocked);
     await m.addColumn(db.folders, db.folders.pinSalt);
     await m.addColumn(db.folders, db.folders.pinHash);
+  }
+
+  /// v2 → v3: notes app storage.
+  static Future<void> _toV3(Migrator m) async {
+    await m.createTable((m.database as AppDatabase).notes);
   }
 }

@@ -38,14 +38,26 @@ class Bookmarks extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Folders, Bookmarks])
+class Notes extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text().withDefault(const Constant(''))();
+  TextColumn get body => text().withDefault(const Constant(''))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [Folders, Bookmarks, Notes])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   AppDatabase.forTesting(super.executor);
 
+  /// Bumped when adding tables/columns; [DatabaseMigrations] upgrades on open.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => DatabaseMigrations.targetSchemaVersion;
 
   static const _unfiledId = 'system-unfiled';
 
@@ -56,6 +68,7 @@ class AppDatabase extends _$AppDatabase {
           await _seedUnfiled();
         },
         onUpgrade: (Migrator m, int from, int to) async {
+          // Automatic stepwise migration (e.g. v2 → v3 adds `notes`).
           await DatabaseMigrations.migrateStepwise(m, from, to);
           await _seedUnfiled();
         },
@@ -251,6 +264,61 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteBookmark(String id) async {
     await (delete(bookmarks)..where((t) => t.id.equals(id))).go();
+  }
+
+  Stream<List<Note>> watchNotes() {
+    return (select(notes)
+          ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+        .watch();
+  }
+
+  Stream<int> watchNoteCount() {
+    final count = notes.id.count();
+    final query = selectOnly(notes)..addColumns([count]);
+    return query.watch().map((rows) {
+      if (rows.isEmpty) return 0;
+      return rows.first.read(count) ?? 0;
+    });
+  }
+
+  Future<Note?> getNoteById(String id) {
+    return (select(notes)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<Note> insertNote({
+    required String title,
+    required String body,
+  }) async {
+    final id = const Uuid().v4();
+    final now = DateTime.now();
+    await into(notes).insert(
+      NotesCompanion.insert(
+        id: id,
+        title: Value(title.trim()),
+        body: Value(body),
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    return (select(notes)..where((t) => t.id.equals(id))).getSingle();
+  }
+
+  Future<void> updateNoteRow({
+    required String id,
+    String? title,
+    String? body,
+  }) async {
+    await (update(notes)..where((t) => t.id.equals(id))).write(
+      NotesCompanion(
+        title: title == null ? const Value.absent() : Value(title.trim()),
+        body: body == null ? const Value.absent() : Value(body),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<void> deleteNote(String id) async {
+    await (delete(notes)..where((t) => t.id.equals(id))).go();
   }
 }
 

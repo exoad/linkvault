@@ -256,7 +256,7 @@ class _UpdateSectionState extends State<UpdateSection> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: LinkvaultSurface(
-              color: Theme.of(context).colorScheme.primaryContainer,
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
               borderRadius: LinkvaultDesign.radiusControl,
               padding: const EdgeInsets.all(LinkvaultDesign.spaceLg),
               child: Column(
@@ -265,9 +265,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                   Text(
                     'Version ${manifest.versionName} available',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                   const SizedBox(height: LinkvaultDesign.spaceMd),

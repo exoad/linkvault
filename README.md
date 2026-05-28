@@ -4,7 +4,7 @@
 
 # linkvault
 
-**Personal Android hub** — links module today, room to grow.
+**Personal Android hub** — Links and Notes apps on your home screen; Thoughts coming later.
 
 [![License: GPL v3](https://img.shields.io/github/license/exoad/linkvault?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/exoad/linkvault?style=flat-square)](https://github.com/exoad/linkvault/releases/latest)
@@ -24,7 +24,9 @@ Not a public product — built for personal use. Source is public under [GPL-3.0
 
 | | |
 |---|---|
-| **Personal hub** | Bold home screen; links today, more modules planned |
+| **Your hub** | App launcher with living color tiles (Links, Notes) |
+| **Links app** | Folders, paste-to-save, optional folder PIN |
+| **Notes app** | Local notes on device — separate from future Thoughts |
 | **Offline folders** | Organize links; mandatory **Unfiled** inbox |
 | **Paste to save** | Add links from clipboard with metadata fetch |
 | **Folder PIN** | Optional 4-digit lock per folder |

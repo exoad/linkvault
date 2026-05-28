@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 
+import 'linkvault_accent.dart';
 import 'linkvault_design.dart';
 import 'linkvault_typography.dart';
 
-/// Builds a Material 3 theme from [scheme] with flat surfaces and Linkvault type.
-ThemeData buildAppTheme(ColorScheme scheme) {
+/// Monochrome Material theme; chroma comes from [LinkvaultAccent] on edges only.
+ThemeData buildAppTheme({
+  required ColorScheme scheme,
+  required LinkvaultAccent accent,
+}) {
   final textTheme = LinkvaultTypography.textTheme(scheme);
   final rounded = RoundedRectangleBorder(borderRadius: LinkvaultDesign.radiusCard);
 
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
+    extensions: [accent],
     fontFamily: LinkvaultDesign.fontFamily,
     scaffoldBackgroundColor: scheme.surface,
     textTheme: textTheme,
@@ -45,7 +50,7 @@ ThemeData buildAppTheme(ColorScheme scheme) {
       ),
     ),
     dividerTheme: DividerThemeData(
-      color: scheme.outlineVariant.withValues(alpha: 0.45),
+      color: scheme.outlineVariant,
       space: 1,
       thickness: 1,
     ),
@@ -53,25 +58,46 @@ ThemeData buildAppTheme(ColorScheme scheme) {
       style: ButtonStyle(
         elevation: WidgetStateProperty.all(0),
         shadowColor: WidgetStateProperty.all(Colors.transparent),
-        visualDensity: VisualDensity.compact,
+        visualDensity: VisualDensity.standard,
+        shape: WidgetStateProperty.all(LinkvaultDesign.buttonShape),
         padding: WidgetStateProperty.all(
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
+      ),
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        shape: const CircleBorder(),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         elevation: 0,
         shadowColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: LinkvaultDesign.radiusControl,
-        ),
+        backgroundColor: scheme.onSurface,
+        foregroundColor: scheme.surface,
+        shape: LinkvaultDesign.buttonShape,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        foregroundColor: scheme.onSurface,
+        side: BorderSide.none,
+        backgroundColor: scheme.surfaceContainerHigh,
+        shape: LinkvaultDesign.buttonShape,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         elevation: 0,
         shadowColor: Colors.transparent,
+        foregroundColor: scheme.onSurface,
+        shape: LinkvaultDesign.buttonShape,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       ),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -79,23 +105,18 @@ ThemeData buildAppTheme(ColorScheme scheme) {
       highlightElevation: 0,
       focusElevation: 0,
       hoverElevation: 0,
-      backgroundColor: scheme.primary,
-      foregroundColor: scheme.onPrimary,
-      extendedPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      backgroundColor: scheme.onSurface,
+      foregroundColor: scheme.surface,
+      extendedPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 4),
       extendedSizeConstraints: const BoxConstraints(minHeight: 52),
-      shape: RoundedRectangleBorder(
-        borderRadius: LinkvaultDesign.radiusControl,
-      ),
+      shape: LinkvaultDesign.buttonShape,
     ),
     snackBarTheme: SnackBarThemeData(
       elevation: 0,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: LinkvaultDesign.radiusControl,
-        side: BorderSide(
-          color: scheme.outlineVariant.withValues(alpha: 0.45),
-        ),
-      ),
+      backgroundColor: scheme.surfaceContainerHigh,
+      contentTextStyle: textTheme.bodyMedium,
+      shape: LinkvaultDesign.buttonShape,
     ),
     dialogTheme: DialogThemeData(
       elevation: 0,
@@ -103,9 +124,6 @@ ThemeData buildAppTheme(ColorScheme scheme) {
       backgroundColor: scheme.surfaceContainerHigh,
       shape: RoundedRectangleBorder(
         borderRadius: LinkvaultDesign.radiusSheet,
-        side: BorderSide(
-          color: scheme.outlineVariant.withValues(alpha: 0.45),
-        ),
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
@@ -113,12 +131,9 @@ ThemeData buildAppTheme(ColorScheme scheme) {
       shadowColor: Colors.transparent,
       backgroundColor: scheme.surfaceContainerLow,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.vertical(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
           top: Radius.circular(LinkvaultDesign.radiusXl),
-        ),
-        side: BorderSide(
-          color: scheme.outlineVariant.withValues(alpha: 0.45),
         ),
       ),
     ),
@@ -127,17 +142,5 @@ ThemeData buildAppTheme(ColorScheme scheme) {
         TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
       },
     ),
-  );
-}
-
-/// Seed-based scheme with expressive secondary/tertiary variety.
-ColorScheme colorSchemeFromSeed({
-  required Color seedColor,
-  required Brightness brightness,
-}) {
-  return ColorScheme.fromSeed(
-    seedColor: seedColor,
-    brightness: brightness,
-    dynamicSchemeVariant: DynamicSchemeVariant.expressive,
   );
 }

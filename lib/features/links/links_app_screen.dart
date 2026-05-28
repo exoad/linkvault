@@ -3,37 +3,37 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../animations/animated_sheet.dart';
 import '../../animations/app_page_route.dart';
-import '../../animations/layout_switcher.dart';
 import '../../animations/list_entrance.dart';
 import '../../app_scope.dart';
+import '../../hub/modules/links_hub_module.dart';
 import '../../models/folder.dart';
 import '../../models/layout_mode.dart';
 import '../../services/layout_preferences.dart';
-import '../../theme/theme_controller.dart';
+import '../../theme/hub_app_colors.dart';
+import '../../theme/linkvault_accent.dart';
+import '../../theme/linkvault_design.dart';
 import '../../widgets/animated_folder_card.dart';
 import '../../widgets/folder_grid_tile.dart';
 import '../../widgets/folder_list_tile.dart';
-import '../../widgets/hub_coming_soon_strip.dart';
-import '../../widgets/hub_hero_header.dart';
 import '../../widgets/layout_mode_toggle.dart';
+import '../../widgets/linkvault_animated_ambient.dart';
 import '../../widgets/linkvault_ambient_background.dart';
 import '../../widgets/paste_link_fab.dart';
-import '../../theme/linkvault_design.dart';
 import '../add_link/add_link_sheet.dart';
 import '../bookmarks/folder_bookmarks_screen.dart';
-import '../settings/settings_screen.dart';
-import 'folder_editor_sheet.dart';
+import '../folders/folder_editor_sheet.dart';
 
-class FoldersScreen extends StatefulWidget {
-  const FoldersScreen({super.key, required this.themeController});
-
-  final ThemeController themeController;
+/// Links hub app — folders and saved URLs.
+class LinksAppScreen extends StatefulWidget {
+  const LinksAppScreen({super.key});
 
   @override
-  State<FoldersScreen> createState() => _FoldersScreenState();
+  State<LinksAppScreen> createState() => _LinksAppScreenState();
 }
 
-class _FoldersScreenState extends State<FoldersScreen> {
+class _LinksAppScreenState extends State<LinksAppScreen> {
+  static const _app = LinksHubModule.appDefinition;
+
   final _layoutPrefs = LayoutPreferences();
   LayoutMode _layoutMode = LayoutMode.list;
   final Set<String> _removingFolderIds = {};
@@ -53,15 +53,6 @@ class _FoldersScreenState extends State<FoldersScreen> {
     if (mode == _layoutMode) return;
     await _layoutPrefs.setLayoutMode(mode);
     if (mounted) setState(() => _layoutMode = mode);
-  }
-
-  Future<void> _openSettings() async {
-    await Navigator.push<void>(
-      context,
-      AppPageRoute(
-        child: SettingsScreen(themeController: widget.themeController),
-      ),
-    );
   }
 
   Future<void> _createFolder() async {
@@ -206,19 +197,35 @@ class _FoldersScreenState extends State<FoldersScreen> {
   Widget build(BuildContext context) {
     final repo = AppScope.of(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final accent = Theme.of(context).extension<LinkvaultAccent>();
+    final phase = AmbientMotionScope.maybeOf(context);
 
-    return Scaffold(
+    Widget appBarTitle(Color iconColor) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PhosphorIcon(PhosphorIcons.link, color: iconColor, size: 22),
+            const SizedBox(width: 8),
+            const Text('Links'),
+          ],
+        );
+
+    final title = accent != null && phase != null
+        ? AnimatedBuilder(
+            animation: phase,
+            builder: (context, _) => appBarTitle(
+              HubAppColors.palette(accent, _app, phase.value).primary,
+            ),
+          )
+        : appBarTitle(_app.seedPrimary);
+
+    return LinkvaultAmbientScaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const SizedBox.shrink(),
+        leading: const BackButton(),
+        title: title,
         actions: [
           LayoutModeToggle(mode: _layoutMode, onChanged: _setLayoutMode),
-          IconButton(
-            tooltip: 'Settings',
-            icon: PhosphorIcon(PhosphorIcons.gear),
-            onPressed: _openSettings,
-          ),
           IconButton(
             tooltip: 'New folder',
             icon: PhosphorIcon(PhosphorIcons.folderPlus),
@@ -226,8 +233,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
           ),
         ],
       ),
-      body: LinkvaultAmbientBackground(
-        child: StreamBuilder<List<FolderModel>>(
+      body: StreamBuilder<List<FolderModel>>(
         stream: repo.watchFolders(),
         builder: (context, snapshot) {
           final folders = snapshot.data ?? [];
@@ -237,26 +243,29 @@ class _FoldersScreenState extends State<FoldersScreen> {
 
           final linkCount = _totalLinks(folders);
           final linkLabel =
-              linkCount == 1 ? '1 link saved' : '$linkCount links saved';
+              linkCount == 1 ? '1 link' : '$linkCount links';
 
           final header = Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              HubHeroHeader(statLabel: linkLabel),
-              const SizedBox(height: LinkvaultDesign.spaceLg),
-              const HubComingSoonStrip(),
-              const SizedBox(height: LinkvaultDesign.spaceXl),
               Text(
                 'Folders',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
               ),
-              const SizedBox(height: LinkvaultDesign.spaceSm),
+              const SizedBox(height: LinkvaultDesign.spaceXs),
+              Text(
+                linkLabel,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: LinkvaultDesign.spaceLg),
             ],
           );
 
-          Widget folderTile(FolderModel folder, int index) {
+          Widget folderTile(FolderModel folder) {
             final locked =
                 folder.requiresUnlock && !repo.canAccessFolder(folder);
             final isRemoving = _removingFolderIds.contains(folder.id);
@@ -279,71 +288,60 @@ class _FoldersScreenState extends State<FoldersScreen> {
 
             return AnimatedFolderCard(
               isRemoving: isRemoving,
-              child: tile.listEntrance(context, index: index),
+              child: tile,
             );
           }
 
-          return LayoutSwitcher(
-            layoutKey: _layoutMode,
-            child: _layoutMode == LayoutMode.list
-                ? ListView.separated(
-                    clipBehavior: Clip.none,
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
-                      16,
-                      88 + bottomInset,
+          final topPad =
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 8;
+
+          return CustomScrollView(
+            clipBehavior: Clip.none,
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, topPad, 16, 0),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([header]),
+                ),
+              ),
+              if (_layoutMode == LayoutMode.list)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => Padding(
+                        padding: EdgeInsets.only(
+                          bottom: index < folders.length - 1 ? 12 : 0,
+                        ),
+                        child: folderTile(folders[index]),
+                      ),
+                      childCount: folders.length,
                     ),
-                    itemCount: folders.length + 1,
-                    separatorBuilder: (_, index) => index == 0
-                        ? const SizedBox(height: 4)
-                        : const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      if (index == 0) return header;
-                      return folderTile(folders[index - 1], index - 1);
-                    },
-                  )
-                : CustomScrollView(
-                    clipBehavior: Clip.none,
-                    slivers: [
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          MediaQuery.paddingOf(context).top +
-                              kToolbarHeight +
-                              8,
-                          16,
-                          0,
-                        ),
-                        sliver: SliverList(
-                          delegate: SliverChildListDelegate([header]),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        sliver: SliverGrid(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.92,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) =>
-                                folderTile(folders[index], index),
-                            childCount: folders.length,
-                          ),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: EdgeInsets.only(bottom: 88 + bottomInset),
-                      ),
-                    ],
                   ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  sliver: SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.92,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => folderTile(folders[index]),
+                      childCount: folders.length,
+                    ),
+                  ),
+                ),
+              SliverPadding(
+                padding: EdgeInsets.only(bottom: 88 + bottomInset),
+              ),
+            ],
           );
         },
-      ),
       ),
       floatingActionButton: PasteLinkFab(
         onPressed: () => showAddLinkSheet(context),

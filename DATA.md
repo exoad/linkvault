@@ -6,7 +6,7 @@ Linkvault is designed so **normal app updates keep your data**.
 
 | Store | Contents |
 |-------|----------|
-| SQLite (`linkvault` database) | Folders, bookmarks, optional folder PIN hashes |
+| SQLite (`linkvault` database) | Folders, bookmarks, notes, optional folder PIN hashes |
 | SharedPreferences | Theme mode, accent color, layout preferences |
 
 Nothing is synced to a server.
@@ -32,7 +32,15 @@ Schema version is defined in [`lib/data/app_database.dart`](lib/data/app_databas
 
 We do **not** drop or recreate the database on version bumps. Existing folders and bookmarks are migrated in place.
 
-When adding schema version `3+`, add a `_toV3` step in `database_migrations.dart` and a test in `test/database_migration_test.dart`.
+Schema **v3** adds the `notes` table for the Notes app.
+
+**Automatic migration:** On launch, Drift compares the on-disk `user_version` to `AppDatabase.schemaVersion`. If the app is newer (e.g. installed v1.0.5 on schema 2, updated to v1.0.6 on schema 3), `onUpgrade` runs `DatabaseMigrations.migrateStepwise` (v2 → v3, etc.) before any query. No user action required.
+
+When adding schema version `4+`:
+
+1. Bump `DatabaseMigrations.targetSchemaVersion` and `AppDatabase.schemaVersion` (same value).
+2. Register `DatabaseMigrations.steps[4] = _toV4`.
+3. Extend `test/database_migration_test.dart` and `test/schema_version_test.dart`.
 
 ## After updating
 
