@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/theme_controller.dart';
+import '../../widgets/linkvault_ambient_background.dart';
 import 'appearance_section.dart';
 import 'update_section.dart';
 
@@ -14,21 +15,25 @@ class SettingsScreen extends StatelessWidget {
     final padding = MediaQuery.paddingOf(context);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          8,
-          16,
-          16 + padding.bottom,
+      body: LinkvaultAmbientBackground(
+        intensity: 0.65,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+            16,
+            16 + padding.bottom,
+          ),
+          children: [
+            const UpdateSection(),
+            const SizedBox(height: 24),
+            AppearanceSection(themeController: themeController),
+          ],
         ),
-        children: [
-          const UpdateSection(),
-          const SizedBox(height: 24),
-          AppearanceSection(themeController: themeController),
-        ],
       ),
     );
   }

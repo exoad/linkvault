@@ -24,11 +24,13 @@ Not a public product — built for personal use. Source is public under [GPL-3.0
 
 | | |
 |---|---|
+| **Personal hub** | Bold home screen; links today, more modules planned |
 | **Offline folders** | Organize links; mandatory **Unfiled** inbox |
 | **Paste to save** | Add links from clipboard with metadata fetch |
 | **Folder PIN** | Optional 4-digit lock per folder |
+| **Expressive UI** | Large type, ambient gradients (background only), list/grid layouts |
 | **Material 3** | System / light / dark, dynamic color on Android 12+ |
-| **On-demand updates** | Install newer builds from GitHub Releases in **Settings** |
+| **On-demand updates** | **Settings → Check for updates** (same signing key on every GitHub release) |
 
 ## Quick start
 

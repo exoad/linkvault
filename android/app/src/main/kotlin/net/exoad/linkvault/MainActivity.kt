@@ -2,6 +2,8 @@ package net.exoad.linkvault
 
 import android.animation.ObjectAnimator
 import android.content.Intent
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -16,6 +18,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.security.MessageDigest
 
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -34,6 +37,18 @@ class MainActivity : FlutterActivity() {
                         result.success(null)
                     } catch (e: Exception) {
                         result.error("settings_failed", e.message, null)
+                    }
+                }
+                "checkApkSigning" -> {
+                    val path = call.argument<String>("path")
+                    if (path.isNullOrBlank()) {
+                        result.error("invalid_path", "APK path required", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        result.success(checkApkSigning(path))
+                    } catch (e: Exception) {
+                        result.error("signing_check_failed", e.message, null)
                     }
                 }
                 "installApk" -> {
@@ -72,11 +87,76 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun checkApkSigning(apkPath: String): Map<String, Any?> {
+        val file = File(apkPath)
+        if (!file.exists()) {
+            throw IllegalArgumentException("APK not found: $apkPath")
+        }
+        val installed = installedAppCertSha256()
+        val apk = apkCertSha256(apkPath)
+        val compatible = installed != null && apk != null && installed == apk
+        return mapOf(
+            "compatible" to compatible,
+            "installedCertSha256" to installed,
+            "apkCertSha256" to apk,
+        )
+    }
+
+    private fun installedAppCertSha256(): String? {
+        val flags = signingFlags()
+        @Suppress("DEPRECATION")
+        val info = packageManager.getPackageInfo(packageName, flags)
+        return certSha256FromPackageInfo(info)
+    }
+
+    private fun apkCertSha256(apkPath: String): String? {
+        val flags = signingFlags()
+        @Suppress("DEPRECATION")
+        val info = packageManager.getPackageArchiveInfo(apkPath, flags)
+            ?: return null
+        info.applicationInfo?.let { appInfo ->
+            appInfo.sourceDir = apkPath
+            appInfo.publicSourceDir = apkPath
+        }
+        return certSha256FromPackageInfo(info)
+    }
+
+    private fun signingFlags(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            PackageManager.GET_SIGNING_CERTIFICATES
+        } else {
+            @Suppress("DEPRECATION")
+            PackageManager.GET_SIGNATURES
+        }
+    }
+
+    private fun certSha256FromPackageInfo(info: PackageInfo): String? {
+        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.signingInfo?.apkContentsSigners
+        } else {
+            @Suppress("DEPRECATION")
+            info.signatures
+        } ?: return null
+        if (signatures.isEmpty()) return null
+        val digest = MessageDigest.getInstance("SHA-256")
+        digest.update(signatures[0].toByteArray())
+        return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+    }
+
     private fun installApk(path: String) {
         if (!canInstallPackages()) {
             openInstallPermissionSettings()
             throw IllegalStateException(
                 "Allow installs from this app, then try again.",
+            )
+        }
+        val check = checkApkSigning(path)
+        val compatible = check["compatible"] as? Boolean ?: false
+        if (!compatible) {
+            throw IllegalStateException(
+                "SIGNING_MISMATCH: This update was signed with a different key than " +
+                    "the app on this device. Uninstall Linkvault and install the new APK " +
+                    "from GitHub Releases (local data will be removed).",
             )
         }
         val file = File(path)
@@ -98,10 +178,9 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
-        
+
         super.onCreate(savedInstanceState)
-        
-        // Premium exit animation for the splash screen
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             splashScreen.setOnExitAnimationListener { splashScreenView ->
                 val slideUp = ObjectAnimator.ofFloat(
@@ -123,7 +202,7 @@ class MainActivity : FlutterActivity() {
                 fadeOut.startDelay = 200L
 
                 slideUp.doOnEnd { splashScreenView.remove() }
-                
+
                 slideUp.start()
                 fadeOut.start()
             }

@@ -13,8 +13,12 @@ import '../../theme/theme_controller.dart';
 import '../../widgets/animated_folder_card.dart';
 import '../../widgets/folder_grid_tile.dart';
 import '../../widgets/folder_list_tile.dart';
+import '../../widgets/hub_coming_soon_strip.dart';
+import '../../widgets/hub_hero_header.dart';
 import '../../widgets/layout_mode_toggle.dart';
+import '../../widgets/linkvault_ambient_background.dart';
 import '../../widgets/paste_link_fab.dart';
+import '../../theme/linkvault_design.dart';
 import '../add_link/add_link_sheet.dart';
 import '../bookmarks/folder_bookmarks_screen.dart';
 import '../settings/settings_screen.dart';
@@ -205,8 +209,9 @@ class _FoldersScreenState extends State<FoldersScreen> {
 
     return Scaffold(
       extendBody: true,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Linkvault'),
+        title: const SizedBox.shrink(),
         actions: [
           LayoutModeToggle(mode: _layoutMode, onChanged: _setLayoutMode),
           IconButton(
@@ -221,7 +226,8 @@ class _FoldersScreenState extends State<FoldersScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<FolderModel>>(
+      body: LinkvaultAmbientBackground(
+        child: StreamBuilder<List<FolderModel>>(
         stream: repo.watchFolders(),
         builder: (context, snapshot) {
           final folders = snapshot.data ?? [];
@@ -230,28 +236,24 @@ class _FoldersScreenState extends State<FoldersScreen> {
           }
 
           final linkCount = _totalLinks(folders);
-          final linkLabel = linkCount == 1 ? '1 link saved' : '$linkCount links saved';
+          final linkLabel =
+              linkCount == 1 ? '1 link saved' : '$linkCount links saved';
 
-          final header = Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your folders',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  linkLabel,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
+          final header = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HubHeroHeader(statLabel: linkLabel),
+              const SizedBox(height: LinkvaultDesign.spaceLg),
+              const HubComingSoonStrip(),
+              const SizedBox(height: LinkvaultDesign.spaceXl),
+              Text(
+                'Folders',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: LinkvaultDesign.spaceSm),
+            ],
           );
 
           Widget folderTile(FolderModel folder, int index) {
@@ -286,12 +288,16 @@ class _FoldersScreenState extends State<FoldersScreen> {
             child: _layoutMode == LayoutMode.list
                 ? ListView.separated(
                     clipBehavior: Clip.none,
-                    padding:
-                        EdgeInsets.fromLTRB(16, 4, 16, 88 + bottomInset),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+                      16,
+                      88 + bottomInset,
+                    ),
                     itemCount: folders.length + 1,
                     separatorBuilder: (_, index) => index == 0
-                        ? const SizedBox(height: 12)
-                        : const SizedBox(height: 10),
+                        ? const SizedBox(height: 4)
+                        : const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       if (index == 0) return header;
                       return folderTile(folders[index - 1], index - 1);
@@ -303,15 +309,14 @@ class _FoldersScreenState extends State<FoldersScreen> {
                       SliverPadding(
                         padding: EdgeInsets.fromLTRB(
                           16,
-                          4,
+                          MediaQuery.paddingOf(context).top +
+                              kToolbarHeight +
+                              8,
                           16,
-                          88 + bottomInset,
+                          0,
                         ),
                         sliver: SliverList(
-                          delegate: SliverChildListDelegate([
-                            header,
-                            const SizedBox(height: 12),
-                          ]),
+                          delegate: SliverChildListDelegate([header]),
                         ),
                       ),
                       SliverPadding(
@@ -320,9 +325,9 @@ class _FoldersScreenState extends State<FoldersScreen> {
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 1.05,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 0.92,
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, index) =>
@@ -338,6 +343,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
                   ),
           );
         },
+      ),
       ),
       floatingActionButton: PasteLinkFab(
         onPressed: () => showAddLinkSheet(context),

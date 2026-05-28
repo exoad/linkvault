@@ -21,10 +21,10 @@ ThemeData buildAppTheme(ColorScheme scheme) {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      backgroundColor: scheme.surface,
+      backgroundColor: Colors.transparent,
       foregroundColor: scheme.onSurface,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: textTheme.titleLarge,
+      titleTextStyle: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
       iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
     ),
     cardTheme: CardThemeData(
@@ -79,14 +79,12 @@ ThemeData buildAppTheme(ColorScheme scheme) {
       highlightElevation: 0,
       focusElevation: 0,
       hoverElevation: 0,
-      backgroundColor: scheme.primaryContainer,
-      foregroundColor: scheme.onPrimaryContainer,
-      extendedPadding: const EdgeInsets.symmetric(horizontal: 20),
+      backgroundColor: scheme.primary,
+      foregroundColor: scheme.onPrimary,
+      extendedPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      extendedSizeConstraints: const BoxConstraints(minHeight: 52),
       shape: RoundedRectangleBorder(
         borderRadius: LinkvaultDesign.radiusControl,
-        side: BorderSide(
-          color: scheme.outlineVariant.withValues(alpha: 0.45),
-        ),
       ),
     ),
     snackBarTheme: SnackBarThemeData(

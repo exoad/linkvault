@@ -30,16 +30,16 @@ class FolderListTile extends StatelessWidget {
     return LinkvaultSurface(
       onTap: onTap,
       onLongPress: onMenu,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: folder.color.withValues(alpha: 0.18),
+          radius: 28,
+          backgroundColor: folder.color.withValues(alpha: 0.2),
           child: PhosphorAppIcon(
             folder.iconName,
             color: folder.color,
-            size: 26,
+            size: 30,
           ),
         ),
         title: Row(
@@ -51,8 +51,8 @@ class FolderListTile extends StatelessWidget {
                   type: MaterialType.transparency,
                   child: Text(
                     folder.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
                   ),
                 ),

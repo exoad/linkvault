@@ -12,11 +12,14 @@ In-app and GitHub Release updates are intended to **preserve** local data; see [
 - GitHub username `exoad` and repo name `linkvault` (used for release updates)
 - Release APKs and `linkvault-update.json` checksum manifests
 
-There are **no API keys, tokens, or signing keystores** in the repository.
+There are **no API keys or tokens** in the repository.
+
+Release signing uses a **shared upload keystore** in git (`android/linkvault-release.jks`) so GitHub APKs and in-app updates always match. This is for personal sideloading only—not Play Store–grade secret handling.
 
 ## Never commit
 
-- `android/local.properties`, `key.properties`, `*.jks`, `*.keystore`
+- `android/local.properties`
+- Ad-hoc `*.jks` / `*.keystore` files outside the shared release key
 - `.env` files or any `ghp_` / `gho_` tokens
 - Personal databases or exported bookmarks
 

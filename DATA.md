@@ -24,7 +24,7 @@ Android replaces the app binary and leaves the app’s private storage (database
 
 - Uninstall the app
 - Clear storage in system settings (“Clear data”)
-- Install a build signed with a **different** key (treated as incompatible)
+- Install a build signed with a **different** key (e.g. an old debug install vs a GitHub release). Use release APKs from GitHub for in-app updates; one reinstall fixes a mismatch.
 
 ## Database schema changes
 

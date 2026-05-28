@@ -72,6 +72,28 @@ class _UpdateSectionState extends State<UpdateSection> {
     }
   }
 
+  Future<void> _showSigningMismatchDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Can’t install over this version'),
+        content: const Text(
+          'This phone has a build signed differently than the update '
+          '(often an old debug install).\n\n'
+          'Uninstall Linkvault, then install the update again from '
+          'Settings or GitHub Releases. That clears local data once; '
+          'later updates install in-app normally.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _downloadAndInstall(UpdateManifest manifest) async {
     if (!Platform.isAndroid) return;
 
@@ -146,6 +168,14 @@ class _UpdateSectionState extends State<UpdateSection> {
           }
         },
       );
+
+      final signing = await ApkInstaller.checkApkSigning(file);
+      if (!mounted) return;
+      if (signing.isSigningMismatch) {
+        await _showSigningMismatchDialog();
+        return;
+      }
+
       await ApkInstaller.install(file);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -156,6 +186,8 @@ class _UpdateSectionState extends State<UpdateSection> {
           ),
         );
       }
+    } on ApkSigningMismatchException {
+      if (mounted) await _showSigningMismatchDialog();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

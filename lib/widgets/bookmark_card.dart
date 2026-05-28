@@ -45,7 +45,7 @@ class _BookmarkCardState extends State<BookmarkCard> {
               ? (value) => setState(() => _pressed = value)
               : null,
           child: Padding(
-            padding: const EdgeInsets.all(LinkvaultDesign.spaceMd),
+            padding: const EdgeInsets.all(LinkvaultDesign.spaceLg),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -76,8 +76,8 @@ class _BookmarkCardState extends State<BookmarkCard> {
                           key: ValueKey(widget.bookmark.title),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -132,13 +132,14 @@ class _DomainAvatar extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final tint = _tint(scheme);
     return CircleAvatar(
-      radius: 22,
-      backgroundColor: tint.withValues(alpha: 0.2),
+      radius: 26,
+      backgroundColor: tint.withValues(alpha: 0.22),
       child: Text(
         _initial,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: tint,
               fontWeight: FontWeight.w700,
+              fontSize: 20,
             ),
       ),
     );

@@ -15,7 +15,9 @@ import '../../theme/linkvault_design.dart';
 import '../../widgets/linkvault_surface.dart';
 import '../../widgets/phosphor_app_icon.dart';
 import '../../widgets/layout_mode_toggle.dart';
+import '../../widgets/linkvault_ambient_background.dart';
 import '../../widgets/paste_link_fab.dart';
+import '../../theme/linkvault_typography.dart';
 import '../add_link/add_link_sheet.dart';
 import 'bookmark_actions.dart';
 
@@ -75,8 +77,13 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
 
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
+    final linkLabel = widget.folder.bookmarkCount == 1
+        ? '1 link'
+        : '${widget.folder.bookmarkCount} links';
+
     return Scaffold(
       extendBody: true,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Hero(
           tag: 'folder-${widget.folder.id}',
@@ -88,10 +95,17 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
                 PhosphorAppIcon(
                   widget.folder.iconName,
                   color: widget.folder.color,
-                  size: 22,
+                  size: 24,
                 ),
                 const SizedBox(width: 8),
-                Flexible(child: Text(widget.folder.name)),
+                Flexible(
+                  child: Text(
+                    widget.folder.name,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -100,12 +114,14 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
           LayoutModeToggle(mode: _layoutMode, onChanged: _setLayoutMode),
         ],
       ),
-      body: StreamBuilder<List<BookmarkModel>>(
+      body: LinkvaultAmbientBackground(
+        child: StreamBuilder<List<BookmarkModel>>(
         stream: repo.watchBookmarks(widget.folder.id),
         builder: (context, snapshot) {
           final bookmarks = snapshot.data ?? [];
 
           if (bookmarks.isEmpty) {
+            final scheme = Theme.of(context).colorScheme;
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -113,36 +129,40 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
                   children: [
                     LinkvaultSurface(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 28,
+                        horizontal: 28,
+                        vertical: 32,
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          PhosphorIcon(
-                            PhosphorIcons.linkBreak,
-                            size: 40,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                          CircleAvatar(
+                            radius: 36,
+                            backgroundColor:
+                                scheme.primaryContainer.withValues(alpha: 0.8),
+                            child: PhosphorIcon(
+                              PhosphorIcons.linkBreak,
+                              size: 36,
+                              color: scheme.onPrimaryContainer,
+                            ),
                           ),
-                          const SizedBox(height: LinkvaultDesign.spaceLg),
+                          const SizedBox(height: LinkvaultDesign.spaceXl),
                           Text(
                             'No links yet',
                             style: Theme.of(context)
                                 .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w600),
+                                .headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(height: LinkvaultDesign.spaceSm),
                           Text(
-                            'Paste a link to save it here.',
+                            'Paste a link to save it in your hub.',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
+                            style: LinkvaultTypography.hubSubtitle(scheme),
+                          ),
+                          const SizedBox(height: LinkvaultDesign.spaceMd),
+                          Text(
+                            linkLabel,
+                            style: LinkvaultTypography.meta(scheme),
                           ),
                         ],
                       ),
@@ -166,13 +186,23 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
             layoutKey: _layoutMode,
             child: _layoutMode == LayoutMode.list
                 ? AnimatedBookmarkList(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 88 + bottomInset),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+                      16,
+                      88 + bottomInset,
+                    ),
                     bookmarks: bookmarks,
                     itemBuilder: (context, bookmark, animation) =>
                         _bookmarkCard(context, bookmark),
                   )
                 : MasonryGridView.count(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 88 + bottomInset),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+                      16,
+                      88 + bottomInset,
+                    ),
                     crossAxisCount: 2,
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
@@ -185,6 +215,7 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
                   ),
           );
         },
+      ),
       ),
       floatingActionButton: PasteLinkFab(
         onPressed: () => showAddLinkSheet(

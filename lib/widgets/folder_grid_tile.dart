@@ -39,12 +39,12 @@ class FolderGridTile extends StatelessWidget {
           Row(
             children: [
               CircleAvatar(
-                radius: 22,
-                backgroundColor: folder.color.withValues(alpha: 0.18),
+                radius: 26,
+                backgroundColor: folder.color.withValues(alpha: 0.2),
                 child: PhosphorAppIcon(
                   folder.iconName,
                   color: folder.color,
-                  size: 24,
+                  size: 28,
                 ),
               ),
               const Spacer(),
@@ -78,8 +78,8 @@ class FolderGridTile extends StatelessWidget {
                 folder.name,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
               ),
             ),

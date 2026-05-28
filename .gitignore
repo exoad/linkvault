@@ -46,8 +46,10 @@ app.*.map.json
 
 # Secrets / signing / machine-local paths
 *.jks
+!android/linkvault-release.jks
 *.keystore
 **/key.properties
+!android/key.properties
 **/local.properties
 .env
 .env.*
