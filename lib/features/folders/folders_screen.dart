@@ -8,12 +8,11 @@ import '../../app_scope.dart';
 import '../../models/folder.dart';
 import '../../models/layout_mode.dart';
 import '../../services/layout_preferences.dart';
-import '../../theme/app_motion.dart';
 import '../../theme/theme_controller.dart';
 import '../../widgets/animated_folder_card.dart';
+import '../../widgets/folder_list_tile.dart';
 import '../../widgets/layout_mode_toggle.dart';
 import '../../widgets/paste_link_fab.dart';
-import '../../widgets/phosphor_app_icon.dart';
 import '../add_link/add_link_sheet.dart';
 import '../bookmarks/folder_bookmarks_screen.dart';
 import '../settings/settings_screen.dart';
@@ -49,6 +48,15 @@ class _FoldersScreenState extends State<FoldersScreen> {
         _layoutMode == LayoutMode.list ? LayoutMode.grid : LayoutMode.list;
     await _layoutPrefs.setLayoutMode(next);
     if (mounted) setState(() => _layoutMode = next);
+  }
+
+  Future<void> _openSettings() async {
+    await Navigator.push<void>(
+      context,
+      AppPageRoute(
+        child: SettingsScreen(themeController: widget.themeController),
+      ),
+    );
   }
 
   Future<void> _createFolder() async {
@@ -104,7 +112,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
     if (confirmed != true || !mounted) return;
 
     setState(() => _removingFolderIds.add(folder.id));
-    await Future<void>.delayed(AppMotion.normal);
+    await Future<void>.delayed(const Duration(milliseconds: 250));
     if (!mounted) return;
 
     try {
@@ -185,28 +193,25 @@ class _FoldersScreenState extends State<FoldersScreen> {
     );
   }
 
+  int _totalLinks(List<FolderModel> folders) {
+    return folders.fold<int>(0, (sum, f) => sum + f.bookmarkCount);
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = AppScope.of(context);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const Text('Linkvault'),
         actions: [
           LayoutModeToggle(mode: _layoutMode, onChanged: (_) => _toggleLayout()),
           IconButton(
-            tooltip: 'Appearance',
-            icon: PhosphorIcon(PhosphorIcons.palette),
-            onPressed: () {
-              Navigator.push<void>(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (context) => SettingsScreen(
-                    themeController: widget.themeController,
-                  ),
-                ),
-              );
-            },
+            tooltip: 'Settings',
+            icon: PhosphorIcon(PhosphorIcons.gear),
+            onPressed: _openSettings,
           ),
           IconButton(
             tooltip: 'New folder',
@@ -223,72 +228,54 @@ class _FoldersScreenState extends State<FoldersScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: folders.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 4),
-            itemBuilder: (context, index) {
-              final folder = folders[index];
-              final subtitle = folder.bookmarkCount == 1
-                  ? '1 link'
-                  : '${folder.bookmarkCount} links';
-              final isRemoving = _removingFolderIds.contains(folder.id);
-              final locked = folder.requiresUnlock &&
-                  !repo.canAccessFolder(folder);
+          final linkCount = _totalLinks(folders);
+          final linkLabel = linkCount == 1 ? '1 link saved' : '$linkCount links saved';
 
-              final card = Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: folder.color.withValues(alpha: 0.2),
-                    child: PhosphorAppIcon(
-                      folder.iconName,
-                      color: folder.color,
-                    ),
-                  ),
-                  title: Row(
+          return ListView.separated(
+            padding: EdgeInsets.fromLTRB(16, 4, 16, 88 + bottomInset),
+            itemCount: folders.length + 1,
+            separatorBuilder: (_, index) =>
+                index == 0 ? const SizedBox(height: 12) : const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Hero(
-                          tag: 'folder-${folder.id}',
-                          child: Material(
-                            type: MaterialType.transparency,
-                            child: Text(folder.name),
-                          ),
-                        ),
+                      Text(
+                        'Your folders',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
-                      if (folder.requiresUnlock)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: PhosphorIcon(
-                            locked
-                                ? PhosphorIcons.lock
-                                : PhosphorIcons.lockOpen,
-                            size: 18,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                        ),
+                      const SizedBox(height: 4),
+                      Text(
+                        linkLabel,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
                     ],
                   ),
-                  subtitle: Text(
-                    locked ? 'Locked · $subtitle' : subtitle,
-                  ),
-                  trailing: folder.isSystem
-                      ? null
-                      : IconButton(
-                          icon: PhosphorIcon(PhosphorIcons.dotsThreeVertical),
-                          onPressed: () => _showFolderMenu(folder),
-                        ),
-                  onTap: () => _openFolder(folder),
-                  onLongPress:
-                      folder.isSystem ? null : () => _showFolderMenu(folder),
-                ),
+                );
+              }
+
+              final folder = folders[index - 1];
+              final locked =
+                  folder.requiresUnlock && !repo.canAccessFolder(folder);
+              final isRemoving = _removingFolderIds.contains(folder.id);
+
+              final tile = FolderListTile(
+                folder: folder,
+                locked: locked,
+                onTap: () => _openFolder(folder),
+                onMenu: folder.isSystem ? null : () => _showFolderMenu(folder),
               );
 
               return AnimatedFolderCard(
                 isRemoving: isRemoving,
-                child: card.listEntrance(context, index: index),
+                child: tile.listEntrance(context, index: index - 1),
               );
             },
           );
@@ -297,6 +284,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
       floatingActionButton: PasteLinkFab(
         onPressed: () => showAddLinkSheet(context),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

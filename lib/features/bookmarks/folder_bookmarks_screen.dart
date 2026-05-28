@@ -72,7 +72,10 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
   Widget build(BuildContext context) {
     final repo = AppScope.of(context);
 
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: Hero(
           tag: 'folder-${widget.folder.id}',
@@ -107,15 +110,48 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
                 padding: const EdgeInsets.all(24),
                 child: StaggeredEmptyState(
                   children: [
-                    PhosphorIcon(PhosphorIcons.linkBreak, size: 48),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No links yet',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 28,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PhosphorIcon(
+                              PhosphorIcons.linkBreak,
+                              size: 40,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No links yet',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Paste a link to save it here.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text('Paste a link to save it in this folder.'),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     FilledButton.icon(
                       onPressed: () => showAddLinkSheet(
                         context,
@@ -134,12 +170,13 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
             layoutKey: _layoutMode,
             child: _layoutMode == LayoutMode.list
                 ? AnimatedBookmarkList(
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 88 + bottomInset),
                     bookmarks: bookmarks,
                     itemBuilder: (context, bookmark, animation) =>
                         _bookmarkCard(context, bookmark),
                   )
                 : MasonryGridView.count(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 88 + bottomInset),
                     crossAxisCount: 2,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
@@ -159,6 +196,7 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
           initialFolderId: widget.folder.id,
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

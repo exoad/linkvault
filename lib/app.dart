@@ -1,9 +1,12 @@
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_scope.dart';
 import 'data/bookmark_repository.dart';
 import 'features/folders/folders_screen.dart';
+import 'theme/app_theme.dart';
+import 'theme/system_ui.dart';
 import 'theme/theme_controller.dart';
 
 class LinkvaultApp extends StatelessWidget {
@@ -28,30 +31,31 @@ class LinkvaultApp extends StatelessWidget {
               final useDynamic = themeController.useDynamicColor;
               final seed = themeController.seedColor;
 
-              ThemeData buildTheme(Brightness brightness, ColorScheme? dynamic) {
+              ThemeData themeFor(Brightness brightness, ColorScheme? dynamic) {
                 final scheme = useDynamic && dynamic != null
                     ? dynamic
-                    : ColorScheme.fromSeed(
+                    : colorSchemeFromSeed(
                         seedColor: seed,
                         brightness: brightness,
                       );
-                return ThemeData(
-                  colorScheme: scheme,
-                  useMaterial3: true,
-                  pageTransitionsTheme: const PageTransitionsTheme(
-                    builders: {
-                      TargetPlatform.android:
-                          FadeUpwardsPageTransitionsBuilder(),
-                    },
-                  ),
-                );
+                return buildAppTheme(scheme);
               }
+
+              final lightTheme = themeFor(Brightness.light, lightDynamic);
+              final darkTheme = themeFor(Brightness.dark, darkDynamic);
 
               return MaterialApp(
                 title: 'Linkvault',
                 themeMode: themeController.themeMode,
-                theme: buildTheme(Brightness.light, lightDynamic),
-                darkTheme: buildTheme(Brightness.dark, darkDynamic),
+                theme: lightTheme,
+                darkTheme: darkTheme,
+                builder: (context, child) {
+                  final scheme = Theme.of(context).colorScheme;
+                  return AnnotatedRegion<SystemUiOverlayStyle>(
+                    value: overlayForScheme(scheme),
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
                 home: FoldersScreen(themeController: themeController),
               );
             },

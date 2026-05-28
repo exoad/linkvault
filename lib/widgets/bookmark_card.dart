@@ -47,6 +47,8 @@ class _BookmarkCardState extends State<BookmarkCard> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _DomainAvatar(url: widget.bookmark.url),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,6 +101,46 @@ class _BookmarkCardState extends State<BookmarkCard> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DomainAvatar extends StatelessWidget {
+  const _DomainAvatar({required this.url});
+
+  final String url;
+
+  String get _initial {
+    try {
+      final host = Uri.parse(url).host;
+      if (host.isEmpty) return '?';
+      final label = host.startsWith('www.') ? host.substring(4) : host;
+      return label[0].toUpperCase();
+    } catch (_) {
+      return '?';
+    }
+  }
+
+  Color _tint(ColorScheme scheme) {
+    final code = _initial.codeUnitAt(0);
+    final hues = [scheme.primary, scheme.secondary, scheme.tertiary];
+    return hues[code % hues.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tint = _tint(scheme);
+    return CircleAvatar(
+      radius: 22,
+      backgroundColor: tint.withValues(alpha: 0.2),
+      child: Text(
+        _initial,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: tint,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }

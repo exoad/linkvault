@@ -7,6 +7,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../services/apk_installer.dart';
 import '../../services/app_update_service.dart';
+import '../../widgets/settings_group.dart';
 
 class UpdateSection extends StatefulWidget {
   const UpdateSection({super.key});
@@ -105,7 +106,9 @@ class _UpdateSectionState extends State<UpdateSection> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Allow installs from this app in system settings.'),
+          content: const Text(
+            'Allow installs from this app in system settings.',
+          ),
           action: SnackBarAction(
             label: 'Settings',
             onPressed: openAppSettings,
@@ -133,7 +136,9 @@ class _UpdateSectionState extends State<UpdateSection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Follow the system prompt to complete installation.'),
+            content: Text(
+              'Follow the system prompt to complete installation.',
+            ),
           ),
         );
       }
@@ -158,69 +163,80 @@ class _UpdateSectionState extends State<UpdateSection> {
     final version = _packageInfo?.version ?? '…';
     final build = _packageInfo?.buildNumber ?? '';
     final manifest = _lastCheck?.manifest;
-    final updateAvailable =
-        _lastCheck?.result == UpdateCheckResult.updateAvailable && manifest != null;
+    final updateAvailable = _lastCheck?.result ==
+            UpdateCheckResult.updateAvailable &&
+        manifest != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return SettingsGroup(
+      title: 'Updates',
       children: [
-        Text('About', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
         ListTile(
-          contentPadding: EdgeInsets.zero,
           leading: PhosphorIcon(PhosphorIcons.info),
-          title: const Text('Version'),
-          subtitle: Text(build.isEmpty ? version : '$version ($build)'),
+          title: const Text('Installed version'),
+          subtitle: Text(build.isEmpty ? version : '$version (build $build)'),
         ),
-        if (_downloading) ...[
-          const SizedBox(height: 8),
-          LinearProgressIndicator(value: _downloadProgress),
-          const SizedBox(height: 4),
-          Text(
-            _downloadProgress != null
-                ? '${(_downloadProgress! * 100).toStringAsFixed(0)}%'
-                : 'Downloading…',
-            style: Theme.of(context).textTheme.bodySmall,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: _checking || _downloading ? null : _checkForUpdates,
+                icon: _checking
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : PhosphorIcon(PhosphorIcons.arrowsClockwise),
+                label: Text(_checking ? 'Checking…' : 'Check for updates'),
+              ),
+              if (_downloading) ...[
+                const SizedBox(height: 12),
+                LinearProgressIndicator(value: _downloadProgress),
+                const SizedBox(height: 6),
+                Text(
+                  _downloadProgress != null
+                      ? '${(_downloadProgress! * 100).toStringAsFixed(0)}% downloaded'
+                      : 'Downloading…',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
           ),
-        ],
-        const SizedBox(height: 8),
-        FilledButton.tonalIcon(
-          onPressed: _checking || _downloading ? null : _checkForUpdates,
-          icon: _checking
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : PhosphorIcon(PhosphorIcons.arrowsClockwise),
-          label: Text(_checking ? 'Checking…' : 'Check for updates'),
         ),
-        if (updateAvailable) ...[
-          const SizedBox(height: 12),
-          Material(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Update available: ${manifest.versionName}',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    onPressed: _downloading
-                        ? null
-                        : () => _downloadAndInstall(manifest),
-                    child: const Text('Download and install'),
-                  ),
-                ],
+        if (updateAvailable)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Material(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Version ${manifest.versionName} available',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: _downloading
+                          ? null
+                          : () => _downloadAndInstall(manifest),
+                      child: const Text('Download and install'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ],
       ],
     );
   }
