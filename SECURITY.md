@@ -4,6 +4,8 @@
 
 Bookmark URLs, titles, folder PIN hashes, and the SQLite database are stored **only on the device**. Nothing is uploaded to GitHub or any backend by this app.
 
+In-app and GitHub Release updates are intended to **preserve** local data; see [DATA.md](DATA.md).
+
 ## What is public in this repo
 
 - Source code ([GPL-3.0](LICENSE))

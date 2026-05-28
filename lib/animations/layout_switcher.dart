@@ -32,10 +32,12 @@ class LayoutSwitcher extends StatelessWidget {
       },
       layoutBuilder: (currentChild, previousChildren) {
         return Stack(
+          fit: StackFit.expand,
           alignment: Alignment.topCenter,
           children: [
-            ...previousChildren,
-            ?currentChild,
+            for (final previous in previousChildren)
+              Positioned.fill(child: previous),
+            if (currentChild != null) Positioned.fill(child: currentChild),
           ],
         );
       },

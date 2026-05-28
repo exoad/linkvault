@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/fetch_status.dart';
 import '../models/folder.dart';
+import 'database_migrations.dart';
 
 part 'app_database.g.dart';
 
@@ -55,16 +56,17 @@ class AppDatabase extends _$AppDatabase {
           await _seedUnfiled();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          if (from < 2) {
-            await m.addColumn(folders, folders.colorValue);
-            await m.addColumn(folders, folders.iconName);
-            await m.addColumn(folders, folders.isLocked);
-            await m.addColumn(folders, folders.pinSalt);
-            await m.addColumn(folders, folders.pinHash);
+          await DatabaseMigrations.migrateStepwise(m, from, to);
+          await _seedUnfiled();
+        },
+        beforeOpen: (details) async {
+          if (details.hadUpgrade) {
+            await _seedUnfiled();
           }
         },
       );
 
+  /// Stable on-disk name so APK updates reuse the same SQLite file.
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'linkvault');
   }

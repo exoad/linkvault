@@ -3,6 +3,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../animations/animated_sheet.dart';
 import '../../animations/app_page_route.dart';
+import '../../animations/layout_switcher.dart';
 import '../../animations/list_entrance.dart';
 import '../../app_scope.dart';
 import '../../models/folder.dart';
@@ -10,6 +11,7 @@ import '../../models/layout_mode.dart';
 import '../../services/layout_preferences.dart';
 import '../../theme/theme_controller.dart';
 import '../../widgets/animated_folder_card.dart';
+import '../../widgets/folder_grid_tile.dart';
 import '../../widgets/folder_list_tile.dart';
 import '../../widgets/layout_mode_toggle.dart';
 import '../../widgets/paste_link_fab.dart';
@@ -43,11 +45,10 @@ class _FoldersScreenState extends State<FoldersScreen> {
     if (mounted) setState(() => _layoutMode = mode);
   }
 
-  Future<void> _toggleLayout() async {
-    final next =
-        _layoutMode == LayoutMode.list ? LayoutMode.grid : LayoutMode.list;
-    await _layoutPrefs.setLayoutMode(next);
-    if (mounted) setState(() => _layoutMode = next);
+  Future<void> _setLayoutMode(LayoutMode mode) async {
+    if (mode == _layoutMode) return;
+    await _layoutPrefs.setLayoutMode(mode);
+    if (mounted) setState(() => _layoutMode = mode);
   }
 
   Future<void> _openSettings() async {
@@ -207,7 +208,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
       appBar: AppBar(
         title: const Text('Linkvault'),
         actions: [
-          LayoutModeToggle(mode: _layoutMode, onChanged: (_) => _toggleLayout()),
+          LayoutModeToggle(mode: _layoutMode, onChanged: _setLayoutMode),
           IconButton(
             tooltip: 'Settings',
             icon: PhosphorIcon(PhosphorIcons.gear),
@@ -231,54 +232,110 @@ class _FoldersScreenState extends State<FoldersScreen> {
           final linkCount = _totalLinks(folders);
           final linkLabel = linkCount == 1 ? '1 link saved' : '$linkCount links saved';
 
-          return ListView.separated(
-            clipBehavior: Clip.none,
-            padding: EdgeInsets.fromLTRB(16, 4, 16, 88 + bottomInset),
-            itemCount: folders.length + 1,
-            separatorBuilder: (_, index) =>
-                index == 0 ? const SizedBox(height: 12) : const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Your folders',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+          final header = Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your folders',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        linkLabel,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  linkLabel,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          );
+
+          Widget folderTile(FolderModel folder, int index) {
+            final locked =
+                folder.requiresUnlock && !repo.canAccessFolder(folder);
+            final isRemoving = _removingFolderIds.contains(folder.id);
+            final onMenu =
+                folder.isSystem ? null : () => _showFolderMenu(folder);
+
+            final tile = _layoutMode == LayoutMode.list
+                ? FolderListTile(
+                    folder: folder,
+                    locked: locked,
+                    onTap: () => _openFolder(folder),
+                    onMenu: onMenu,
+                  )
+                : FolderGridTile(
+                    folder: folder,
+                    locked: locked,
+                    onTap: () => _openFolder(folder),
+                    onMenu: onMenu,
+                  );
+
+            return AnimatedFolderCard(
+              isRemoving: isRemoving,
+              child: tile.listEntrance(context, index: index),
+            );
+          }
+
+          return LayoutSwitcher(
+            layoutKey: _layoutMode,
+            child: _layoutMode == LayoutMode.list
+                ? ListView.separated(
+                    clipBehavior: Clip.none,
+                    padding:
+                        EdgeInsets.fromLTRB(16, 4, 16, 88 + bottomInset),
+                    itemCount: folders.length + 1,
+                    separatorBuilder: (_, index) => index == 0
+                        ? const SizedBox(height: 12)
+                        : const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      if (index == 0) return header;
+                      return folderTile(folders[index - 1], index - 1);
+                    },
+                  )
+                : CustomScrollView(
+                    clipBehavior: Clip.none,
+                    slivers: [
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          4,
+                          16,
+                          88 + bottomInset,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            header,
+                            const SizedBox(height: 12),
+                          ]),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        sliver: SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: 1.05,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) =>
+                                folderTile(folders[index], index),
+                            childCount: folders.length,
+                          ),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: EdgeInsets.only(bottom: 88 + bottomInset),
                       ),
                     ],
                   ),
-                );
-              }
-
-              final folder = folders[index - 1];
-              final locked =
-                  folder.requiresUnlock && !repo.canAccessFolder(folder);
-              final isRemoving = _removingFolderIds.contains(folder.id);
-
-              final tile = FolderListTile(
-                folder: folder,
-                locked: locked,
-                onTap: () => _openFolder(folder),
-                onMenu: folder.isSystem ? null : () => _showFolderMenu(folder),
-              );
-
-              return AnimatedFolderCard(
-                isRemoving: isRemoving,
-                child: tile.listEntrance(context, index: index - 1),
-              );
-            },
           );
         },
       ),

@@ -86,7 +86,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                 ? notes.length > 500
                     ? '${notes.substring(0, 500)}…'
                     : notes
-                : 'Download and install this update?',
+                : 'Download and install this update? Your folders and links stay on this device.',
           ),
         ),
         actions: [

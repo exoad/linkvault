@@ -43,11 +43,10 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
     if (mounted) setState(() => _layoutMode = mode);
   }
 
-  Future<void> _toggleLayout() async {
-    final next =
-        _layoutMode == LayoutMode.list ? LayoutMode.grid : LayoutMode.list;
-    await _layoutPrefs.setLayoutMode(next);
-    if (mounted) setState(() => _layoutMode = next);
+  Future<void> _setLayoutMode(LayoutMode mode) async {
+    if (mode == _layoutMode) return;
+    await _layoutPrefs.setLayoutMode(mode);
+    if (mounted) setState(() => _layoutMode = mode);
   }
 
   Future<void> _fetchTitle(String bookmarkId) async {
@@ -98,7 +97,7 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
           ),
         ),
         actions: [
-          LayoutModeToggle(mode: _layoutMode, onChanged: (_) => _toggleLayout()),
+          LayoutModeToggle(mode: _layoutMode, onChanged: _setLayoutMode),
         ],
       ),
       body: StreamBuilder<List<BookmarkModel>>(
