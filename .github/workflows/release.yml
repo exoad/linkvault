@@ -9,8 +9,39 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  validate-version:
+    name: Validate · Tag matches pubspec
     runs-on: ubuntu-latest
+    outputs:
+      version_name: ${{ steps.version.outputs.version_name }}
+      version_code: ${{ steps.version.outputs.version_code }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify tag and pubspec version
+        id: version
+        run: |
+          VERSION_LINE=$(grep '^version:' pubspec.yaml | head -1)
+          VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: *//' | cut -d+ -f1)
+          VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: *//' | cut -d+ -f2)
+          TAG="${GITHUB_REF_NAME}"
+          EXPECTED_TAG="v${VERSION_NAME}"
+
+          if [ "$TAG" != "$EXPECTED_TAG" ]; then
+            echo "Tag ${TAG} does not match pubspec version ${VERSION_NAME} (expected ${EXPECTED_TAG})"
+            exit 1
+          fi
+
+          echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+
+  build-and-package:
+    name: Build · APK, manifest, checksums
+    needs: validate-version
+    runs-on: ubuntu-latest
+    outputs:
+      apk_name: ${{ steps.package.outputs.apk_name }}
+      sha256: ${{ steps.package.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v6
 
@@ -19,54 +50,128 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Parse version from pubspec
-        id: version
-        run: |
-          VERSION_LINE=$(grep '^version:' pubspec.yaml | head -1)
-          VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: *//' | cut -d+ -f1)
-          VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: *//' | cut -d+ -f2)
-          TAG="${GITHUB_REF_NAME}"
-          EXPECTED_TAG="v${VERSION_NAME}"
-          if [ "$TAG" != "$EXPECTED_TAG" ]; then
-            echo "Tag $TAG does not match pubspec version $VERSION_NAME (expected $EXPECTED_TAG)"
-            exit 1
-          fi
-          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
-          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
-
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build release APK
+      - name: Compile release APK
         run: |
           flutter build apk --release \
             --dart-define=GITHUB_OWNER=exoad \
             --dart-define=GITHUB_REPO=linkvault
 
-      - name: Package release assets
+      - name: Create update manifest and checksums
+        id: package
         run: |
-          VERSION_NAME="${{ steps.version.outputs.version_name }}"
+          VERSION_NAME="${{ needs.validate-version.outputs.version_name }}"
           APK_SRC="build/app/outputs/flutter-apk/app-release.apk"
           APK_NAME="linkvault-${VERSION_NAME}.apk"
           cp "$APK_SRC" "$APK_NAME"
           SHA256=$(sha256sum "$APK_NAME" | awk '{print $1}')
           PUBLISHED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
           cat > linkvault-update.json <<EOF
           {
             "versionName": "${VERSION_NAME}",
-            "versionCode": ${{ steps.version.outputs.version_code }},
+            "versionCode": ${{ needs.validate-version.outputs.version_code }},
             "apkFileName": "${APK_NAME}",
             "sha256": "${SHA256}",
             "publishedAt": "${PUBLISHED_AT}"
           }
           EOF
-          echo "${SHA256}  ${APK_NAME}" > checksums.txt
 
-      - name: Create GitHub Release
+          echo "${SHA256}  ${APK_NAME}" > checksums.txt
+          echo "apk_name=${APK_NAME}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            linkvault-*.apk
+            linkvault-update.json
+            checksums.txt
+
+  publish-github-release:
+    name: Publish · GitHub Release
+    needs:
+      - validate-version
+      - build-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download packaged assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+
+      - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: |
-            linkvault-${{ steps.version.outputs.version_name }}.apk
+            linkvault-${{ needs.validate-version.outputs.version_name }}.apk
             linkvault-update.json
             checksums.txt
+
+  release-report:
+    name: Report · Release summary
+    needs:
+      - validate-version
+      - build-and-package
+      - publish-github-release
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release grid
+        env:
+          VALIDATE: ${{ needs.validate-version.result }}
+          BUILD: ${{ needs.build-and-package.result }}
+          PUBLISH: ${{ needs.publish-github-release.result }}
+          VERSION_NAME: ${{ needs.validate-version.outputs.version_name }}
+          VERSION_CODE: ${{ needs.validate-version.outputs.version_code }}
+          APK_NAME: ${{ needs.build-and-package.outputs.apk_name }}
+          SHA256: ${{ needs.build-and-package.outputs.sha256 }}
+        run: |
+          status_icon() {
+            case "$1" in
+              success) echo "Passed" ;;
+              failure) echo "Failed" ;;
+              cancelled) echo "Cancelled" ;;
+              skipped) echo "Skipped" ;;
+              *) echo "$1" ;;
+            esac
+          }
+
+          overall="Passed"
+          for r in "$VALIDATE" "$BUILD" "$PUBLISH"; do
+            if [ "$r" != "success" ]; then
+              overall="Failed"
+              break
+            fi
+          done
+
+          {
+            echo "## Release summary"
+            echo ""
+            echo "**Overall:** ${overall}"
+            echo ""
+            echo "| Step | Job | Result |"
+            echo "|------|-----|--------|"
+            echo "| Tag vs pubspec | \`Validate · Tag matches pubspec\` | $(status_icon "$VALIDATE") |"
+            echo "| APK, manifest, checksums | \`Build · APK, manifest, checksums\` | $(status_icon "$BUILD") |"
+            echo "| GitHub Release upload | \`Publish · GitHub Release\` | $(status_icon "$PUBLISH") |"
+            echo ""
+            echo "| Artifact | Value |"
+            echo "|----------|-------|"
+            echo "| Tag | \`${GITHUB_REF_NAME}\` |"
+            echo "| Version name | \`${VERSION_NAME:-n/a}\` |"
+            echo "| Version code | \`${VERSION_CODE:-n/a}\` |"
+            echo "| APK | \`${APK_NAME:-n/a}\` |"
+            echo "| SHA-256 | \`${SHA256:-n/a}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$overall" != "Passed" ]; then
+            exit 1
+          fi

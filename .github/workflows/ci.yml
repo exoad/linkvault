@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  test:
+  flutter-analyze:
+    name: Check · Dart analyze
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -20,15 +24,92 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze
+      - name: Run static analysis
         run: flutter analyze
 
-      - name: Test
-        run: flutter test
+  flutter-test:
+    name: Check · Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
-      - name: Secret scan (Gitleaks)
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run unit tests
+        run: flutter test --reporter expanded
+
+  secret-scan:
+    name: Check · Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
         run: |
           GITLEAKS_VERSION=8.24.2
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
           chmod +x gitleaks
           ./gitleaks detect --source . --verbose --redact
+
+  ci-report:
+    name: Report · CI summary
+    runs-on: ubuntu-latest
+    needs:
+      - flutter-analyze
+      - flutter-test
+      - secret-scan
+    if: always()
+    steps:
+      - name: Publish results grid
+        env:
+          ANALYZE: ${{ needs.flutter-analyze.result }}
+          TEST: ${{ needs.flutter-test.result }}
+          SECRETS: ${{ needs.secret-scan.result }}
+        run: |
+          status_icon() {
+            case "$1" in
+              success) echo "Passed" ;;
+              failure) echo "Failed" ;;
+              cancelled) echo "Cancelled" ;;
+              skipped) echo "Skipped" ;;
+              *) echo "$1" ;;
+            esac
+          }
+
+          overall="Passed"
+          for r in "$ANALYZE" "$TEST" "$SECRETS"; do
+            if [ "$r" != "success" ]; then
+              overall="Failed"
+              break
+            fi
+          done
+
+          {
+            echo "## CI summary"
+            echo ""
+            echo "**Overall:** ${overall}"
+            echo ""
+            echo "| Check | Job | Result |"
+            echo "|-------|-----|--------|"
+            echo "| Dart static analysis | \`Check · Dart analyze\` | $(status_icon "$ANALYZE") |"
+            echo "| Unit tests | \`Check · Unit tests\` | $(status_icon "$TEST") |"
+            echo "| Secret scan (Gitleaks) | \`Check · Secret scan (Gitleaks)\` | $(status_icon "$SECRETS") |"
+            echo ""
+            echo "| Metadata | Value |"
+            echo "|----------|-------|"
+            echo "| Ref | \`${GITHUB_REF_NAME}\` |"
+            echo "| Commit | [\`${GITHUB_SHA::7}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}) |"
+            echo "| Workflow | [\`${GITHUB_WORKFLOW}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$overall" != "Passed" ]; then
+            exit 1
+          fi
