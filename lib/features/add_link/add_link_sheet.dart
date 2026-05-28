@@ -15,17 +15,24 @@ import '../../widgets/phosphor_app_icon.dart';
 Future<void> showAddLinkSheet(
   BuildContext context, {
   String? initialFolderId,
+  String? initialText,
 }) {
   return showAppBottomSheet<void>(
     context: context,
-    builder: (context) => AddLinkSheet(initialFolderId: initialFolderId),
+    builder: (context) => AddLinkSheet(
+      initialFolderId: initialFolderId,
+      initialText: initialText,
+    ),
   );
 }
 
 class AddLinkSheet extends StatefulWidget {
-  const AddLinkSheet({super.key, this.initialFolderId});
+  const AddLinkSheet({super.key, this.initialFolderId, this.initialText});
 
   final String? initialFolderId;
+
+  /// Pre-filled URL/text (e.g. from a share intent).
+  final String? initialText;
 
   @override
   State<AddLinkSheet> createState() => _AddLinkSheetState();
@@ -41,6 +48,10 @@ class _AddLinkSheetState extends State<AddLinkSheet> {
   void initState() {
     super.initState();
     _selectedFolderId = widget.initialFolderId;
+    final seed = widget.initialText?.trim();
+    if (seed != null && seed.isNotEmpty) {
+      _controller.text = seed;
+    }
     _loadLastFolder();
   }
 

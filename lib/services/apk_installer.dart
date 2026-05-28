@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+import '../platform/app_api.g.dart';
+
 /// Result of comparing the installed app certificate to a downloaded APK.
 class ApkSigningCheck {
   const ApkSigningCheck({
@@ -14,11 +16,11 @@ class ApkSigningCheck {
   final String? installedCertSha256;
   final String? apkCertSha256;
 
-  factory ApkSigningCheck.fromMap(Map<dynamic, dynamic> map) {
+  factory ApkSigningCheck.fromResult(ApkSigningResult result) {
     return ApkSigningCheck(
-      compatible: map['compatible'] as bool? ?? false,
-      installedCertSha256: map['installedCertSha256'] as String?,
-      apkCertSha256: map['apkCertSha256'] as String?,
+      compatible: result.compatible,
+      installedCertSha256: result.installedCertSha256,
+      apkCertSha256: result.apkCertSha256,
     );
   }
 
@@ -26,22 +28,24 @@ class ApkSigningCheck {
 }
 
 /// Android APK install permission and package installer intents.
+///
+/// Thin Dart facade over the Pigeon-generated [InstallHostApi]; the heavy
+/// lifting lives in Kotlin (`InstallManager`).
 class ApkInstaller {
-  static const _channel = MethodChannel('net.exoad.linkvault/install');
+  static final InstallHostApi _api = InstallHostApi();
 
   static const signingMismatchCode = 'SIGNING_MISMATCH';
 
   /// Whether the user has allowed this app to install packages (Android 8+).
   static Future<bool> canInstallPackages() async {
     if (!Platform.isAndroid) return false;
-    final allowed = await _channel.invokeMethod<bool>('canInstallPackages');
-    return allowed ?? false;
+    return _api.canInstallPackages();
   }
 
   /// Opens the system screen: Allow from this source / Install unknown apps.
   static Future<void> openInstallPermissionSettings() async {
     if (!Platform.isAndroid) return;
-    await _channel.invokeMethod<void>('openInstallPermissionSettings');
+    await _api.openInstallPermissionSettings();
   }
 
   /// Compares signing certificates before install.
@@ -49,11 +53,8 @@ class ApkInstaller {
     if (!Platform.isAndroid) {
       return const ApkSigningCheck(compatible: true);
     }
-    final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
-      'checkApkSigning',
-      {'path': apkFile.path},
-    );
-    return ApkSigningCheck.fromMap(result ?? {});
+    final result = await _api.checkApkSigning(apkFile.path);
+    return ApkSigningCheck.fromResult(result);
   }
 
   /// Triggers the system package installer for a downloaded APK.
@@ -62,11 +63,9 @@ class ApkInstaller {
       throw UnsupportedError('APK install is Android-only');
     }
     try {
-      await _channel.invokeMethod<void>('installApk', {
-        'path': apkFile.path,
-      });
+      await _api.installApk(apkFile.path);
     } on PlatformException catch (e) {
-      if (e.message?.contains(signingMismatchCode) == true ||
+      if (e.code == signingMismatchCode ||
           e.message?.contains('signed with a different key') == true) {
         throw ApkSigningMismatchException();
       }

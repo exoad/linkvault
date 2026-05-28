@@ -16,11 +16,13 @@ class LinkvaultApp extends StatelessWidget {
     required this.repository,
     required this.notes,
     required this.themeController,
+    this.navigatorKey,
   });
 
   final BookmarkRepository repository;
   final NoteRepository notes;
   final ThemeController themeController;
+  final GlobalKey<NavigatorState>? navigatorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +43,7 @@ class LinkvaultApp extends StatelessWidget {
 
           return MaterialApp(
             title: 'Linkvault',
+            navigatorKey: navigatorKey,
             themeMode: themeController.themeMode,
             theme: themeFor(Brightness.light),
             darkTheme: themeFor(Brightness.dark),

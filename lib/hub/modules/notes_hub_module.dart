@@ -3,11 +3,13 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../animations/app_page_route.dart';
 import '../../app_scope.dart';
+import '../../features/notes/note_editor_screen.dart';
 import '../../features/notes/notes_app_screen.dart';
+import '../../platform/app_api.g.dart';
 import '../hub_module.dart';
 
 /// Notes hub app — local notes on this device.
-final class NotesHubModule implements HubModule {
+final class NotesHubModule implements HubModule, IntentAware {
   const NotesHubModule();
 
   static const id = 'notes';
@@ -41,5 +43,18 @@ final class NotesHubModule implements HubModule {
     return AppScope.notesOf(context).watchNoteCount().map((count) {
       return count == 1 ? '1 note' : '$count notes';
     });
+  }
+
+  @override
+  bool canHandle(IncomingIntent intent) =>
+      intent.kind == IntentKind.newNote || intent.kind == IntentKind.shareText;
+
+  @override
+  Future<void> handleIntent(BuildContext context, IncomingIntent intent) {
+    // Open a fresh note editor, seeded with shared text when present.
+    return Navigator.push<void>(
+      context,
+      AppPageRoute(child: NoteEditorScreen(initialBody: intent.text)),
+    );
   }
 }

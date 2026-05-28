@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="save_link"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_save_link_short"
+        android:shortcutLongLabel="@string/shortcut_save_link_long">
+        <intent
+            android:action="net.exoad.linkvault.action.SAVE_LINK"
+            android:targetPackage="net.exoad.linkvault"
+            android:targetClass="net.exoad.linkvault.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="new_note"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_note_short"
+        android:shortcutLongLabel="@string/shortcut_new_note_long">
+        <intent
+            android:action="net.exoad.linkvault.action.NEW_NOTE"
+            android:targetPackage="net.exoad.linkvault"
+            android:targetClass="net.exoad.linkvault.MainActivity" />
+    </shortcut>
+</shortcuts>

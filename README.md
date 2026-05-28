@@ -28,6 +28,8 @@ Not a public product — built for personal use. Source is public under [GPL-3.0
 | **Links app** | Folders, paste-to-save, optional folder PIN |
 | **Notes app** | Local notes on device — separate from future Thoughts |
 | **Offline folders** | Organize links; mandatory **Unfiled** inbox |
+| **Share to save** | Share a URL/text or select text in any app to save into Links or Notes |
+| **Launcher shortcuts** | Long-press the app icon for **Paste link** / **New note** |
 | **Paste to save** | Add links from clipboard with metadata fetch |
 | **Folder PIN** | Optional 4-digit lock per folder |
 | **Expressive UI** | Large type, ambient gradients (background only), list/grid layouts |

@@ -11,6 +11,8 @@ Linkvault is designed so **normal app updates keep your data**.
 
 Nothing is synced to a server.
 
+Shared content (system share sheet, selected-text action, launcher shortcuts) is delivered as a **transient intent** and is not persisted until you save it as a link or note. See [HUB_MODULES.md](HUB_MODULES.md) for the intent-routing contract.
+
 ## APK updates (GitHub Releases / in-app install)
 
 Installing a newer APK **over** an existing install **does not erase** app data when:

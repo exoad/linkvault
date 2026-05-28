@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_save_link_short">Paste link</string>
+    <string name="shortcut_save_link_long">Save a link</string>
+    <string name="shortcut_new_note_short">New note</string>
+    <string name="shortcut_new_note_long">Write a new note</string>
+</resources>

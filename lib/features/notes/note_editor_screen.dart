@@ -9,9 +9,12 @@ import '../../widgets/linkvault_animated_ambient.dart';
 import '../../widgets/linkvault_ambient_background.dart';
 
 class NoteEditorScreen extends StatefulWidget {
-  const NoteEditorScreen({super.key, this.note});
+  const NoteEditorScreen({super.key, this.note, this.initialBody});
 
   final NoteModel? note;
+
+  /// Seed text for a brand-new note (e.g. shared text). Ignored when editing.
+  final String? initialBody;
 
   @override
   State<NoteEditorScreen> createState() => _NoteEditorScreenState();
@@ -31,7 +34,11 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.note?.title ?? '');
-    _bodyController = TextEditingController(text: widget.note?.body ?? '');
+    _bodyController = TextEditingController(
+      text: widget.note?.body ?? widget.initialBody ?? '',
+    );
+    _dirty = widget.note == null &&
+        (widget.initialBody?.isNotEmpty ?? false);
     _titleController.addListener(_markDirty);
     _bodyController.addListener(_markDirty);
   }

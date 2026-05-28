@@ -24,10 +24,40 @@ Hub apps are modular. Each app is a class that implements [`HubModule`](lib/hub/
 
 5. **Wire dependencies** in `main.dart` / `AppScope` if the app needs a repository.
 
+## Optional: handle external intents (share / shortcuts)
+
+A module can react to inbound Android intents (the system share sheet, the
+selected-text "Linkvault" action, or a launcher shortcut) by also mixing in
+[`IntentAware`](lib/hub/hub_module.dart):
+
+```dart
+final class MyHubModule implements HubModule, IntentAware {
+  // ...HubModule members...
+
+  @override
+  bool canHandle(IncomingIntent intent) => intent.kind == IntentKind.shareText;
+
+  @override
+  Future<void> handleIntent(BuildContext context, IncomingIntent intent) {
+    // Present this app's capture UI, seeded with intent.text.
+  }
+}
+```
+
+- `IntentRouter` ([lib/services/intent_router.dart](lib/services/intent_router.dart)) dispatches each intent to the first registered `IntentAware` module that returns `true` from `canHandle`. A matching `IncomingIntent.targetModuleId` (set by launcher shortcuts) is preferred.
+- The Kotlin side ([`IntentReader`](android/app/src/main/kotlin/net/exoad/linkvault/IntentReader.kt)) normalizes raw `Intent`s into an `IncomingIntent` (`saveLink` / `newNote` / `shareText`). Cold starts are pulled via `IntentHostApi.getInitialIntent`; warm starts are pushed via `FlutterIntentApi.onIntent`. Both are type-safe Pigeon APIs generated from [pigeons/app_api.dart](pigeons/app_api.dart).
+- To add a launcher shortcut for your app, add a `<shortcut>` with a unique action to [res/xml/shortcuts.xml](android/app/src/main/res/xml/shortcuts.xml) and map that action in `IntentReader.fromIntent`.
+
+Regenerate the platform bridge after editing the Pigeon schema:
+
+```bash
+dart run pigeon --input pigeons/app_api.dart
+```
+
 ## Example: flip a teaser to available
 
 Change `ThoughtsHubModule.status` to `HubModuleStatus.available`, implement `open()`, and add a `features/thoughts/` screen.
 
 ## App ids
 
-Use stable lowercase string ids (`links`, `notes`, `thoughts`). They are used for definitions and can be used for deep links or prefs later.
+Use stable lowercase string ids (`links`, `notes`, `thoughts`). They are used for definitions, as the `targetModuleId` hint for intent routing, and can be used for deep links or prefs later.
