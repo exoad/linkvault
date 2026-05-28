@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../services/apk_installer.dart';
@@ -102,19 +101,32 @@ class _UpdateSectionState extends State<UpdateSection> {
     );
     if (confirmed != true || !mounted) return;
 
-    if (await Permission.requestInstallPackages.isDenied) {
+    if (!await ApkInstaller.canInstallPackages()) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Allow app installs'),
           content: const Text(
-            'Allow installs from this app in system settings.',
+            'Linkvault needs permission to install updates. On the next '
+            'screen, turn on “Allow from this source” (or “Install unknown apps”), '
+            'then return here and tap Download and install again.',
           ),
-          action: SnackBarAction(
-            label: 'Settings',
-            onPressed: openAppSettings,
-          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Open settings'),
+            ),
+          ],
         ),
       );
+      if (openSettings == true) {
+        await ApkInstaller.openInstallPermissionSettings();
+      }
       return;
     }
 

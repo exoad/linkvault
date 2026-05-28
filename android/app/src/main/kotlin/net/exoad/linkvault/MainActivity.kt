@@ -4,6 +4,7 @@ import android.animation.ObjectAnimator
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.os.Bundle
 import android.view.View
 import android.view.animation.AnticipateInterpolator
@@ -24,6 +25,17 @@ class MainActivity : FlutterActivity() {
             "net.exoad.linkvault/install",
         ).setMethodCallHandler { call, result ->
             when (call.method) {
+                "canInstallPackages" -> {
+                    result.success(canInstallPackages())
+                }
+                "openInstallPermissionSettings" -> {
+                    try {
+                        openInstallPermissionSettings()
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.error("settings_failed", e.message, null)
+                    }
+                }
                 "installApk" -> {
                     val path = call.argument<String>("path")
                     if (path.isNullOrBlank()) {
@@ -42,7 +54,31 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun canInstallPackages(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            packageManager.canRequestPackageInstalls()
+        } else {
+            true
+        }
+    }
+
+    private fun openInstallPermissionSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+        }
+    }
+
     private fun installApk(path: String) {
+        if (!canInstallPackages()) {
+            openInstallPermissionSettings()
+            throw IllegalStateException(
+                "Allow installs from this app, then try again.",
+            )
+        }
         val file = File(path)
         if (!file.exists()) {
             throw IllegalArgumentException("APK not found: $path")
