@@ -1,0 +1,67 @@
+name: linkvault
+description: "Local links vault"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  drift: ^2.28.0
+  drift_flutter: ^0.2.4
+  sqlite3_flutter_libs: ^0.5.34
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  http: ^1.4.0
+  html: ^0.15.6
+  connectivity_plus: ^6.1.4
+  url_launcher: ^6.3.1
+  uuid: ^4.5.1
+  flutter_staggered_grid_view: ^0.7.0
+  flutter_displaymode: ^0.7.0
+  shared_preferences: ^2.5.3
+  flutter_animate: ^4.5.2
+  phosphoricons_flutter: ^1.0.0
+  dynamic_color: ^1.7.0
+  crypto: ^3.0.7
+  package_info_plus: ^8.3.0
+  permission_handler: ^11.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.28.0
+  build_runner: ^2.5.4
+  mockito: ^5.4.6
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/
+
+# Regenerate: python3 tool/generate_branding.py
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/branding/app_icon.png
+  adaptive_icon_background: "#6750A4"
+  adaptive_icon_foreground: assets/branding/app_icon_foreground.png
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  color_dark: "#121216"
+  image: assets/branding/splash_android12_icon.png
+  image_dark: assets/branding/splash_android12_icon_dark.png
+  android_12:
+    color: "#FFFFFF"
+    color_dark: "#121216"
+    image: assets/branding/splash_android12_icon.png
+    image_dark: assets/branding/splash_android12_icon_dark.png
+    icon_background_color: "#FFFFFF"
+    icon_background_color_dark: "#121216"
