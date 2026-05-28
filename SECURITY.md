@@ -6,7 +6,7 @@ Bookmark URLs, titles, folder PIN hashes, and the SQLite database are stored **o
 
 ## What is public in this repo
 
-- Source code (WTFPL)
+- Source code ([GPL-3.0](LICENSE))
 - GitHub username `exoad` and repo name `linkvault` (used for release updates)
 - Release APKs and `linkvault-update.json` checksum manifests
 

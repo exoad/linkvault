@@ -1,20 +1,56 @@
+<div align="center">
+
+<img src="assets/branding/app_icon_foreground.png" alt="" width="88" height="88" />
+
 # linkvault
 
-Personal Android hub app. The links module is the first piece; more may land here over time.
+**Personal Android hub** — links module today, room to grow.
 
-This is **not** a public product — it is built for my own use.
+[![License: GPL v3](https://img.shields.io/github/license/exoad/linkvault?style=flat-square)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/exoad/linkvault?style=flat-square)](https://github.com/exoad/linkvault/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/exoad/linkvault/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/exoad/linkvault/actions/workflows/ci.yml)
+[![Flutter](https://img.shields.io/badge/Flutter-stable-02569B?style=flat-square&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white)](https://www.android.com)
 
-**Today:** offline bookmark folders, paste-to-save links, optional folder PIN, Material 3 theming.
+[Download APK](https://github.com/exoad/linkvault/releases/latest) · [Releases](https://github.com/exoad/linkvault/releases) · [Security](SECURITY.md) · [How to release](RELEASE.md)
+
+</div>
+
+---
+
+Not a public product — built for personal use. Source is public under [GPL-3.0](LICENSE).
+
+## Features
+
+| | |
+|---|---|
+| **Offline folders** | Organize links; mandatory **Unfiled** inbox |
+| **Paste to save** | Add links from clipboard with metadata fetch |
+| **Folder PIN** | Optional 4-digit lock per folder |
+| **Material 3** | System / light / dark, dynamic color on Android 12+ |
+| **On-demand updates** | Install newer builds from GitHub Releases in **Settings** |
 
 ## Quick start
 
 ```bash
+git clone https://github.com/exoad/linkvault.git
+cd linkvault
 flutter pub get
 flutter run
 ```
 
-APK builds are published on [Releases](https://github.com/exoad/linkvault/releases). In the app: **Settings → Check for updates**.
+Prefer a binary? Grab the latest **`linkvault-*.apk`** from [Releases](https://github.com/exoad/linkvault/releases/latest), or open the app → **Settings** → **Check for updates**.
+
+## Develop
+
+```bash
+flutter analyze
+flutter test
+flutter build apk --release
+```
+
+Tagging and CI releases: see [RELEASE.md](RELEASE.md).
 
 ## License
 
-[WTFPL](LICENSE) — Do What The Fuck You Want To.
+This project is licensed under the [GNU General Public License v3.0](LICENSE) (full text from the [FSF](https://www.gnu.org/licenses/gpl-3.0.txt)).
