@@ -44,10 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Secrets / signing
+# Secrets / signing / machine-local paths
 *.jks
 *.keystore
-key.properties
+**/key.properties
+**/local.properties
 .env
 .env.*
 tool/.local_update_serve/
