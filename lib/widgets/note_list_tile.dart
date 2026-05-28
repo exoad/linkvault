@@ -6,6 +6,7 @@ import '../models/note.dart';
 import '../theme/hub_app_colors.dart' show HubAppColors, HubAppPalette;
 import '../theme/linkvault_accent.dart';
 import 'linkvault_animated_ambient.dart';
+import 'linkvault_icon_chip.dart';
 import 'linkvault_surface.dart';
 
 class NoteListTile extends StatelessWidget {
@@ -42,20 +43,17 @@ class NoteListTile extends StatelessWidget {
     return LinkvaultSurface(
       onTap: onTap,
       onLongPress: onDelete,
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 4,
-            height: 48,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [palette.primary, palette.secondary],
-              ),
+          LinkvaultIconChip(
+            color: palette.primary,
+            dimension: 48,
+            child: PhosphorIcon(
+              PhosphorIcons.note,
+              color: palette.primary,
+              size: 24,
             ),
           ),
           const SizedBox(width: 14),

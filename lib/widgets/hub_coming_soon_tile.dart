@@ -4,6 +4,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import '../hub/hub_module.dart';
 import '../theme/linkvault_design.dart';
 import '../theme/linkvault_typography.dart';
+import 'linkvault_icon_chip.dart';
 import 'linkvault_surface.dart';
 
 /// Teaser row for a [HubModule] that is not launchable yet.
@@ -25,10 +26,15 @@ class HubComingSoonTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          PhosphorIcon(
-            app.icon,
-            size: 22,
-            color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+          LinkvaultIconChip(
+            color: scheme.onSurfaceVariant,
+            dimension: 44,
+            fill: 0.1,
+            child: PhosphorIcon(
+              app.icon,
+              size: 22,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
           ),
           const SizedBox(width: LinkvaultDesign.spaceMd),
           Expanded(

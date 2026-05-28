@@ -6,6 +6,7 @@ import '../theme/app_motion.dart';
 import '../theme/linkvault_accent.dart';
 import '../theme/linkvault_design.dart';
 import '../theme/linkvault_typography.dart';
+import 'linkvault_icon_chip.dart';
 import 'linkvault_surface.dart';
 
 class BookmarkCard extends StatefulWidget {
@@ -136,9 +137,9 @@ class _DomainAvatar extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final accent = Theme.of(context).extension<LinkvaultAccent>();
     final tint = _tint(scheme, accent);
-    return CircleAvatar(
-      radius: 26,
-      backgroundColor: tint.withValues(alpha: 0.22),
+    return LinkvaultIconChip(
+      color: tint,
+      dimension: 48,
       child: Text(
         _initial,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(

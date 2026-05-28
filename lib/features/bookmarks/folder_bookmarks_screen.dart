@@ -11,6 +11,7 @@ import '../../models/layout_mode.dart';
 import '../../services/layout_preferences.dart';
 import '../../widgets/bookmark_card.dart';
 import '../../theme/linkvault_design.dart';
+import '../../widgets/linkvault_icon_chip.dart';
 import '../../widgets/linkvault_surface.dart';
 import '../../widgets/phosphor_app_icon.dart';
 import '../../widgets/layout_mode_toggle.dart';
@@ -133,13 +134,13 @@ class _FolderBookmarksScreenState extends State<FolderBookmarksScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircleAvatar(
-                            radius: 36,
-                            backgroundColor: scheme.surfaceContainerHighest,
+                          LinkvaultIconChip(
+                            color: widget.folder.color,
+                            dimension: 76,
                             child: PhosphorIcon(
                               PhosphorIcons.linkBreak,
-                              size: 36,
-                              color: scheme.onSurface,
+                              size: 34,
+                              color: widget.folder.color,
                             ),
                           ),
                           const SizedBox(height: LinkvaultDesign.spaceXl),

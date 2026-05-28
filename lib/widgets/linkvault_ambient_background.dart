@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_motion.dart';
 import '../theme/linkvault_gradients.dart';
+import 'film_grain.dart';
 import 'linkvault_animated_ambient.dart';
 
 /// Scaffold body with solid surface base and slowly animated ambient glow.
@@ -9,7 +10,7 @@ class LinkvaultAmbientBackground extends StatelessWidget {
   const LinkvaultAmbientBackground({
     super.key,
     required this.child,
-    this.intensity = 1.0,
+    this.intensity = LinkvaultGradients.ambientIntensity,
   });
 
   final Widget child;
@@ -25,6 +26,7 @@ class LinkvaultAmbientBackground extends StatelessWidget {
         ColoredBox(color: scheme.surface),
         LinkvaultAnimatedAmbient(intensity: intensity),
         child,
+        const FilmGrain(),
       ],
     );
   }
@@ -40,7 +42,7 @@ class LinkvaultAmbientScaffold extends StatefulWidget {
     this.floatingActionButtonLocation,
     this.extendBody = false,
     this.extendBodyBehindAppBar = false,
-    this.ambientIntensity = 1.0,
+    this.ambientIntensity = LinkvaultGradients.ambientIntensity,
   });
 
   final PreferredSizeWidget? appBar;
@@ -110,6 +112,7 @@ class _LinkvaultAmbientScaffoldState extends State<LinkvaultAmbientScaffold>
           else
             LinkvaultAnimatedAmbient(intensity: widget.ambientIntensity),
           widget.body,
+          const FilmGrain(),
         ],
       ),
       floatingActionButton: widget.floatingActionButton,

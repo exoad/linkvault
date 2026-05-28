@@ -8,11 +8,14 @@ export '../widgets/linkvault_animated_ambient.dart'
 
 /// Ambient edge color — orbs and vignettes behind content, not on cards.
 abstract final class LinkvaultGradients {
+  /// Global scale for edge glow (0–1). Soft and serene, but clearly alive.
+  static const double ambientIntensity = 0.82;
+
   static bool enabled(BuildContext context) => motionEnabled(context);
 
   static Widget ambientLayer(
     BuildContext context, {
-    double intensity = 1.0,
+    double intensity = ambientIntensity,
   }) {
     return IgnorePointer(
       child: LinkvaultAnimatedAmbient(intensity: intensity),

@@ -65,3 +65,16 @@ extension LinkvaultAccentContext on BuildContext {
   LinkvaultAccent get linkvaultAccent =>
       Theme.of(this).extension<LinkvaultAccent>()!;
 }
+
+extension LinkvaultAccentCycle on LinkvaultAccent {
+  /// Smoothly cycles primary → secondary → tertiary → primary for a phase in
+  /// any range. Used for the living edge glow, hub tiles, and surface tints.
+  Color cycleColor(double phase) {
+    final colors = [primary, secondary, tertiary];
+    final wrapped = ((phase % 1.0) + 1.0) % 1.0;
+    final p = wrapped * colors.length;
+    final index = p.floor() % colors.length;
+    final next = (index + 1) % colors.length;
+    return Color.lerp(colors[index], colors[next], p - p.floor())!;
+  }
+}

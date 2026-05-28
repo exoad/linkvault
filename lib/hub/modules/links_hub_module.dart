@@ -15,7 +15,7 @@ final class LinksHubModule implements HubModule {
   static const appDefinition = HubAppDefinition(
     id: id,
     name: 'Links',
-    description: 'Folders and saved URLs',
+    description: 'Saved URLs',
     icon: PhosphorIcons.link,
     seedPrimary: Color(0xFF4DA8FF),
     seedSecondary: Color(0xFF38BDF8),

@@ -12,6 +12,7 @@ import '../../theme/linkvault_design.dart';
 import '../../theme/linkvault_typography.dart';
 import '../../widgets/linkvault_animated_ambient.dart';
 import '../../widgets/linkvault_ambient_background.dart';
+import '../../widgets/linkvault_icon_chip.dart';
 import '../../widgets/linkvault_surface.dart';
 import '../../widgets/note_list_tile.dart';
 import 'note_editor_screen.dart';
@@ -179,13 +180,12 @@ class _EmptyNotes extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundColor: (colors?.primary ?? scheme.onSurface)
-                          .withValues(alpha: 0.15),
+                    LinkvaultIconChip(
+                      color: colors?.primary ?? scheme.onSurface,
+                      dimension: 76,
                       child: PhosphorIcon(
                         PhosphorIcons.note,
-                        size: 36,
+                        size: 34,
                         color: colors?.primary ?? scheme.onSurface,
                       ),
                     ),

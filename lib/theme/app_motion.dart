@@ -7,7 +7,7 @@ abstract final class AppMotion {
   static const Duration slow = Duration(milliseconds: 400);
 
   /// Full loop for ambient edge glow (color drift + orb movement).
-  static const Duration ambientCycle = Duration(seconds: 28);
+  static const Duration ambientCycle = Duration(seconds: 20);
 
   static const Duration staggerStep = Duration(milliseconds: 40);
   static const Duration dialogStaggerStep = Duration(milliseconds: 80);

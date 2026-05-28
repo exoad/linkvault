@@ -15,7 +15,7 @@ final class NotesHubModule implements HubModule {
   static const appDefinition = HubAppDefinition(
     id: id,
     name: 'Notes',
-    description: 'Quick notes on this device',
+    description: 'Local notes',
     icon: PhosphorIcons.note,
     seedPrimary: Color(0xFFFBBF24),
     seedSecondary: Color(0xFFA78BFA),

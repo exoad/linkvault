@@ -9,6 +9,7 @@ import '../../models/folder.dart';
 import '../../services/folder_preferences.dart';
 import '../../services/url_normalizer.dart';
 import '../../theme/app_motion.dart';
+import '../../widgets/linkvault_icon_chip.dart';
 import '../../widgets/phosphor_app_icon.dart';
 
 Future<void> showAddLinkSheet(
@@ -184,10 +185,9 @@ class _AddLinkSheetState extends State<AddLinkSheet> {
                         value: f.id,
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              radius: 14,
-                              backgroundColor:
-                                  f.color.withValues(alpha: 0.2),
+                            LinkvaultIconChip(
+                              color: f.color,
+                              dimension: 30,
                               child: PhosphorAppIcon(
                                 f.iconName,
                                 size: 16,

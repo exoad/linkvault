@@ -3,6 +3,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../models/folder.dart';
 import '../theme/linkvault_design.dart';
+import 'linkvault_icon_chip.dart';
 import 'linkvault_surface.dart';
 import 'phosphor_app_icon.dart';
 
@@ -38,13 +39,13 @@ class FolderGridTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: folder.color.withValues(alpha: 0.2),
+              LinkvaultIconChip(
+                color: folder.color,
+                dimension: 48,
                 child: PhosphorAppIcon(
                   folder.iconName,
                   color: folder.color,
-                  size: 28,
+                  size: 24,
                 ),
               ),
               const Spacer(),

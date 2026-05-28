@@ -11,7 +11,7 @@ import '../theme/linkvault_gradients.dart';
 class LinkvaultAnimatedAmbient extends StatefulWidget {
   const LinkvaultAnimatedAmbient({
     super.key,
-    this.intensity = 1.0,
+    this.intensity = LinkvaultGradients.ambientIntensity,
     this.phase,
   });
 
@@ -121,144 +121,79 @@ class _AmbientGlowPainter extends CustomPainter {
   final double intensity;
   final bool isDark;
 
-  static const _orbConfigs = <_OrbConfig>[
-    _OrbConfig(
-      anchorX: 0.88,
-      anchorY: 0.06,
-      radius: 320,
+  /// Mesh of soft glow blobs (anchors as fractions of the canvas).
+  static const _blobs = <_BlobConfig>[
+    _BlobConfig(
+      anchorX: 0.80,
+      anchorY: 0.00,
+      radiusScale: 0.62,
       phaseOffset: 0.0,
       alphaScale: 1.0,
     ),
-    _OrbConfig(
-      anchorX: 0.10,
-      anchorY: 0.14,
-      radius: 280,
-      phaseOffset: 0.31,
+    _BlobConfig(
+      anchorX: 0.02,
+      anchorY: 0.26,
+      radiusScale: 0.56,
+      phaseOffset: 0.33,
+      alphaScale: 0.92,
+    ),
+    _BlobConfig(
+      anchorX: 0.95,
+      anchorY: 0.80,
+      radiusScale: 0.58,
+      phaseOffset: 0.66,
+      alphaScale: 0.95,
+    ),
+    _BlobConfig(
+      anchorX: 0.30,
+      anchorY: 1.02,
+      radiusScale: 0.52,
+      phaseOffset: 0.16,
       alphaScale: 0.85,
-    ),
-    _OrbConfig(
-      anchorX: 0.86,
-      anchorY: 0.90,
-      radius: 260,
-      phaseOffset: 0.62,
-      alphaScale: 0.75,
-    ),
-    _OrbConfig(
-      anchorX: 0.14,
-      anchorY: 0.92,
-      radius: 220,
-      phaseOffset: 0.48,
-      alphaScale: 0.7,
     ),
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final primaryAlpha = (isDark ? 0.22 : 0.18) * intensity;
-    final tertiaryAlpha = (isDark ? 0.16 : 0.14) * intensity;
-    final secondaryAlpha = (isDark ? 0.12 : 0.10) * intensity;
-    final edgeAlpha = (isDark ? 0.28 : 0.22) * intensity;
-    final fadeBase = isDark ? 0.45 : 0.38;
-
-    final pulse = 0.88 + 0.12 * _wave(t);
-
-    _paintEdgeVignette(
-      canvas,
-      size,
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-      color: _cycleColor(0.0),
-      alpha: edgeAlpha * pulse,
-      fade: fadeBase + 0.05 * _wave(t + 0.18),
-    );
-    _paintEdgeVignette(
-      canvas,
-      size,
-      begin: Alignment.centerRight,
-      end: Alignment.centerLeft,
-      color: _cycleColor(0.33),
-      alpha: edgeAlpha * 0.9 * (1.04 - 0.08 * _wave(t + 0.42)),
-      fade: fadeBase + 0.04 * _wave(t + 0.55),
-    );
-    _paintEdgeVignette(
-      canvas,
-      size,
-      begin: Alignment.bottomCenter,
-      end: Alignment.topCenter,
-      color: _cycleColor(0.66),
-      alpha: edgeAlpha * 0.75 * (0.96 + 0.08 * _wave(t + 0.71)),
-      fade: 0.5 + 0.06 * _wave(t + 0.12),
-    );
-
-    final alphas = [primaryAlpha, tertiaryAlpha, secondaryAlpha, tertiaryAlpha];
-    for (var i = 0; i < _orbConfigs.length; i++) {
-      final config = _orbConfigs[i];
-      _paintOrb(
-        canvas,
-        size,
-        config: config,
-        color: _cycleColor(config.phaseOffset + t * 0.35),
-        alpha: alphas[i] * config.alphaScale,
-      );
-    }
-  }
-
-  void _paintEdgeVignette(
-    Canvas canvas,
-    Size size, {
-    required Alignment begin,
-    required Alignment end,
-    required Color color,
-    required double alpha,
-    required double fade,
-  }) {
     final rect = Offset.zero & size;
-    final paint = Paint()
-      ..shader = LinearGradient(
-        begin: begin,
-        end: end,
-        colors: [
-          color.withValues(alpha: alpha.clamp(0.0, 1.0)),
-          color.withValues(alpha: 0),
-        ],
-        stops: [0, fade.clamp(0.2, 0.65)],
-      ).createShader(rect);
-    canvas.drawRect(rect, paint);
+    final shortest = size.shortestSide;
+    final drift = shortest * 0.11 * intensity;
+
+    // Additive blending on the dark canvas creates the bright, blended
+    // overlaps characteristic of modern "tech" aurora glows. Light themes
+    // blend normally so the washes stay soft pastels instead of blowing out.
+    final blend = isDark ? BlendMode.plus : BlendMode.srcOver;
+    final baseAlpha = (isDark ? 0.46 : 0.24) * intensity;
+
+    canvas.saveLayer(rect, Paint());
+    for (final blob in _blobs) {
+      final phase = t + blob.phaseOffset;
+      final center = Offset(
+        size.width * blob.anchorX + drift * _wave(phase),
+        size.height * blob.anchorY + drift * _wave(phase + 0.27, freq: 0.85),
+      );
+      final radius = shortest *
+          blob.radiusScale *
+          (1.0 + 0.10 * _wave(phase + 0.5, freq: 0.5));
+      final color = _cycleColor(blob.phaseOffset + t);
+      final alpha = (baseAlpha * blob.alphaScale).clamp(0.0, 1.0);
+
+      final paint = Paint()
+        ..blendMode = blend
+        ..shader = RadialGradient(
+          colors: [
+            color.withValues(alpha: alpha),
+            color.withValues(alpha: alpha * 0.45),
+            color.withValues(alpha: 0),
+          ],
+          stops: const [0.0, 0.45, 1.0],
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      canvas.drawCircle(center, radius, paint);
+    }
+    canvas.restore();
   }
 
-  void _paintOrb(
-    Canvas canvas,
-    Size size, {
-    required _OrbConfig config,
-    required Color color,
-    required double alpha,
-  }) {
-    final drift = 42.0 * intensity;
-    final phase = t + config.phaseOffset;
-    final center = Offset(
-      size.width * config.anchorX + drift * _wave(phase),
-      size.height * config.anchorY + drift * _wave(phase + 0.27, freq: 0.85),
-    );
-    final radius =
-        config.radius * (1.0 + 0.07 * _wave(phase + 0.5, freq: 0.45));
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    final paint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          color.withValues(alpha: alpha.clamp(0.0, 1.0)),
-          color.withValues(alpha: 0),
-        ],
-      ).createShader(rect);
-    canvas.drawCircle(center, radius, paint);
-  }
-
-  Color _cycleColor(double phase) {
-    final colors = [accent.primary, accent.secondary, accent.tertiary];
-    final p = (phase % 1.0) * colors.length;
-    final index = p.floor() % colors.length;
-    final next = (index + 1) % colors.length;
-    return Color.lerp(colors[index], colors[next], p - p.floor())!;
-  }
+  Color _cycleColor(double phase) => accent.cycleColor(phase);
 
   double _wave(double phase, {double freq = 1.0}) =>
       math.sin((phase * freq) * math.pi * 2);
@@ -272,18 +207,21 @@ class _AmbientGlowPainter extends CustomPainter {
   }
 }
 
-class _OrbConfig {
-  const _OrbConfig({
+class _BlobConfig {
+  const _BlobConfig({
     required this.anchorX,
     required this.anchorY,
-    required this.radius,
+    required this.radiusScale,
     required this.phaseOffset,
     required this.alphaScale,
   });
 
+  /// Anchor as a fraction of canvas width/height.
   final double anchorX;
   final double anchorY;
-  final double radius;
+
+  /// Blob radius as a fraction of the canvas shortest side.
+  final double radiusScale;
   final double phaseOffset;
   final double alphaScale;
 }
@@ -331,7 +269,7 @@ class AmbientAwareFabGlow extends StatelessWidget {
     return AnimatedBuilder(
       animation: phase,
       builder: (context, child) {
-        final pulse = 0.82 + 0.18 * math.sin(phase.value * math.pi * 2);
+        final pulse = 0.7 + 0.3 * math.sin(phase.value * math.pi * 2);
         return _FabGlowStack(
           accent: accent,
           pulse: pulse,
@@ -356,11 +294,10 @@ class _FabGlowStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = accent.primary;
-    final tertiary = accent.tertiary;
-    final t = ((pulse - 0.82) / 0.18).clamp(0.0, 1.0);
-    final secondaryMix =
-        Color.lerp(primary, accent.secondary, t)!;
+    final t = ((pulse - 0.4) / 0.6).clamp(0.0, 1.0);
+    // Drift the glow hue with the pulse so it feels alive, not static.
+    final warm = Color.lerp(accent.primary, accent.secondary, t)!;
+    final cool = Color.lerp(accent.tertiary, accent.primary, t)!;
 
     return Stack(
       alignment: Alignment.center,
@@ -374,13 +311,13 @@ class _FabGlowStack extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
-                  color: secondaryMix.withValues(alpha: 0.22 + 0.18 * pulse),
-                  blurRadius: lerpDouble(22, 32, t)!,
-                  spreadRadius: lerpDouble(0, 3, t)!,
+                  color: warm.withValues(alpha: 0.10 + 0.12 * pulse),
+                  blurRadius: lerpDouble(18, 30, t)!,
+                  spreadRadius: lerpDouble(0, 2, t)!,
                 ),
                 BoxShadow(
-                  color: tertiary.withValues(alpha: 0.10 + 0.12 * pulse),
-                  blurRadius: lerpDouble(32, 48, t)!,
+                  color: cool.withValues(alpha: 0.06 + 0.08 * pulse),
+                  blurRadius: lerpDouble(28, 42, t)!,
                 ),
               ],
             ),

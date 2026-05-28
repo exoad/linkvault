@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../models/folder.dart';
+import 'linkvault_icon_chip.dart';
 import 'linkvault_surface.dart';
 import 'phosphor_app_icon.dart';
 
@@ -33,13 +34,13 @@ class FolderListTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundColor: folder.color.withValues(alpha: 0.2),
+        leading: LinkvaultIconChip(
+          color: folder.color,
+          dimension: 52,
           child: PhosphorAppIcon(
             folder.iconName,
             color: folder.color,
-            size: 30,
+            size: 26,
           ),
         ),
         title: Row(

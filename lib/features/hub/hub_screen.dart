@@ -86,6 +86,7 @@ class HubScreen extends StatelessWidget {
                       return HubAppTile(
                         app: module.definition,
                         statLabel: snapshot.data ?? '…',
+                        height: tileHeight,
                         onTap: () => module.open(context),
                       );
                     },
