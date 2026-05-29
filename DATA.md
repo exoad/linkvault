@@ -8,7 +8,7 @@ Linkvault is designed so **normal app updates keep your data**.
 |-------|----------|
 | SQLite (`linkvault` database) | Folders, bookmarks, notes, chat sessions/messages, optional folder PIN hashes |
 | SharedPreferences | Theme mode, accent color, layout preferences, chat inference backend (CPU/GPU), optional Hugging Face token |
-| App documents storage | Downloaded on-device LLM weights (~3 GB for Gemma E2B; not in the APK) |
+| App documents storage | Downloaded on-device LLM weights (`files/models/`, ~2.6 GB Gemma 4 E2B `.litertlm`; not in the APK) |
 
 Nothing is synced to a server.
 

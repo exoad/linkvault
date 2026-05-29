@@ -16,6 +16,9 @@ final class WebSearchTool implements ChatTool {
   String get name => 'web_search';
 
   @override
+  String get label => 'Web search';
+
+  @override
   String get description =>
       'Search the web for a short factual summary. Requires network.';
 

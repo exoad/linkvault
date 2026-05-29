@@ -4,7 +4,7 @@
 
 # linkvault
 
-**Personal Android hub** — Links and Notes apps on your home screen; Thoughts coming later.
+**A personal Android hub** — one launcher, several apps, everything on device.
 
 [![License: GPL v3](https://img.shields.io/github/license/exoad/linkvault?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/exoad/linkvault?style=flat-square)](https://github.com/exoad/linkvault/releases/latest)
@@ -18,23 +18,19 @@
 
 ---
 
-Not a public product — built for personal use. Source is public under [GPL-3.0](LICENSE).
+Not a public product. Source is public under [GPL-3.0](LICENSE).
 
-## Features
+## Hub
 
-| | |
-|---|---|
-| **Your hub** | App launcher with living color tiles (Links, Notes) |
-| **Links app** | Folders, paste-to-save, optional folder PIN |
-| **Notes app** | Local notes on device — separate from future Thoughts |
-| **Offline folders** | Organize links; mandatory **Unfiled** inbox |
-| **Share to save** | Share a URL/text or select text in any app to save into Links or Notes |
-| **Launcher shortcuts** | Long-press the app icon for **Paste link** / **New note** |
-| **Paste to save** | Add links from clipboard with metadata fetch |
-| **Folder PIN** | Optional 4-digit lock per folder |
-| **Expressive UI** | Large type, auto-cycling lava-lamp ambient (background only), list/grid layouts |
-| **Material 3** | Dark-only monochrome UI with auto-cycling ambient glow |
-| **On-demand updates** | **Settings → Check for updates** (same signing key on every GitHub release) |
+**Links** · **Notes** · **Chat** · *Thoughts* (later)
+
+Modular tiles on a shared ambient shell. Each app is its own module; the backdrop does not reset when you move between them.
+
+## Stack
+
+Flutter · Drift (SQLite) · Kotlin embedding · Pigeon host APIs · on-device inference (`flutter_gemma`) where Chat needs it.
+
+Dark-only chrome. Black canvas, white mark, edge glow. Chromatic motion lives in the ambient layer and hub accents—not in base UI chrome.
 
 ## Quick start
 
@@ -45,7 +41,7 @@ flutter pub get
 flutter run
 ```
 
-Prefer a binary? Grab the latest **`linkvault-*.apk`** from [Releases](https://github.com/exoad/linkvault/releases/latest), or open the app → **Settings** → **Check for updates**.
+Binary installs: latest `linkvault-*.apk` on [Releases](https://github.com/exoad/linkvault/releases/latest), or **Settings → Check for updates** in an existing install (same signing key).
 
 ## Develop
 
@@ -55,8 +51,10 @@ flutter test
 flutter build apk --release
 ```
 
-Tagging and CI releases: see [RELEASE.md](RELEASE.md).
+Hub apps, schema migrations, intents, and agent-oriented notes: [AGENTS.md](AGENTS.md).  
+Releases and tagging: [RELEASE.md](RELEASE.md).  
+Persistence policy: [DATA.md](DATA.md).
 
 ## License
 
-This project is licensed under the [GNU General Public License v3.0](LICENSE) (full text from the [FSF](https://www.gnu.org/licenses/gpl-3.0.txt)).
+[GNU General Public License v3.0](LICENSE) — [FSF text](https://www.gnu.org/licenses/gpl-3.0.txt).

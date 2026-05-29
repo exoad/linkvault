@@ -1,11 +1,9 @@
-import 'package:flutter_gemma/core/tool.dart';
-
 import 'chat_tool.dart';
 import 'get_current_time_tool.dart';
 import 'open_url_tool.dart';
 import 'web_search_tool.dart';
 
-/// Registers app tools and builds Gemma [Tool] declarations.
+/// Registers app tools executed when the model requests a function call.
 final class ToolRegistry {
   ToolRegistry({
     List<ChatTool>? tools,
@@ -21,15 +19,11 @@ final class ToolRegistry {
 
   final Map<String, ChatTool> _tools;
 
-  List<Tool> get gemmaTools => _tools.values
-      .map(
-        (t) => Tool(
-          name: t.name,
-          description: t.description,
-          parameters: t.parametersSchema,
-        ),
-      )
-      .toList();
+  String labelFor(String name) {
+    final tool = _tools[name];
+    if (tool == null) return name;
+    return tool.label;
+  }
 
   Future<String> execute(String name, Map<String, dynamic> args) async {
     final tool = _tools[name];

@@ -211,6 +211,29 @@ enum class IntentKind(val raw: Int) {
   }
 }
 
+enum class LlmBackend(val raw: Int) {
+  CPU(0),
+  GPU(1);
+
+  companion object {
+    fun ofRaw(raw: Int): LlmBackend? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
+enum class LlmHistoryRole(val raw: Int) {
+  USER(0),
+  ASSISTANT(1),
+  TOOL(2);
+
+  companion object {
+    fun ofRaw(raw: Int): LlmHistoryRole? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /**
  * A normalized external intent delivered from Kotlin to Flutter.
  *
@@ -304,6 +327,144 @@ data class ApkSigningResult (
     return result
   }
 }
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class LlmHistoryMessage (
+  val role: LlmHistoryRole,
+  val content: String,
+  val toolName: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LlmHistoryMessage {
+      val role = pigeonVar_list[0] as LlmHistoryRole
+      val content = pigeonVar_list[1] as String
+      val toolName = pigeonVar_list[2] as String?
+      return LlmHistoryMessage(role, content, toolName)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      role,
+      content,
+      toolName,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as LlmHistoryMessage
+    return AppApiPigeonUtils.deepEquals(this.role, other.role) && AppApiPigeonUtils.deepEquals(this.content, other.content) && AppApiPigeonUtils.deepEquals(this.toolName, other.toolName)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.role)
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.content)
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.toolName)
+    return result
+  }
+}
+
+/**
+ * Sampling and context limits (applied when loading or updating session).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class LlmGenerationConfig (
+  val temperature: Double,
+  val topK: Long,
+  val topP: Double,
+  val maxOutputTokens: Long,
+  val contextTokenLimit: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LlmGenerationConfig {
+      val temperature = pigeonVar_list[0] as Double
+      val topK = pigeonVar_list[1] as Long
+      val topP = pigeonVar_list[2] as Double
+      val maxOutputTokens = pigeonVar_list[3] as Long
+      val contextTokenLimit = pigeonVar_list[4] as Long
+      return LlmGenerationConfig(temperature, topK, topP, maxOutputTokens, contextTokenLimit)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      temperature,
+      topK,
+      topP,
+      maxOutputTokens,
+      contextTokenLimit,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as LlmGenerationConfig
+    return AppApiPigeonUtils.deepEquals(this.temperature, other.temperature) && AppApiPigeonUtils.deepEquals(this.topK, other.topK) && AppApiPigeonUtils.deepEquals(this.topP, other.topP) && AppApiPigeonUtils.deepEquals(this.maxOutputTokens, other.maxOutputTokens) && AppApiPigeonUtils.deepEquals(this.contextTokenLimit, other.contextTokenLimit)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.temperature)
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.topK)
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.topP)
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.maxOutputTokens)
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.contextTokenLimit)
+    return result
+  }
+}
+
+/**
+ * Estimated context fill for the active native session.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class LlmContextStats (
+  val usedTokens: Long,
+  val maxTokens: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LlmContextStats {
+      val usedTokens = pigeonVar_list[0] as Long
+      val maxTokens = pigeonVar_list[1] as Long
+      return LlmContextStats(usedTokens, maxTokens)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      usedTokens,
+      maxTokens,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as LlmContextStats
+    return AppApiPigeonUtils.deepEquals(this.usedTokens, other.usedTokens) && AppApiPigeonUtils.deepEquals(this.maxTokens, other.maxTokens)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.usedTokens)
+    result = 31 * result + AppApiPigeonUtils.deepHash(this.maxTokens)
+    return result
+  }
+}
 private open class AppApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -313,13 +474,38 @@ private open class AppApiPigeonCodec : StandardMessageCodec() {
         }
       }
       130.toByte() -> {
+        return (readValue(buffer) as Long?)?.let {
+          LlmBackend.ofRaw(it.toInt())
+        }
+      }
+      131.toByte() -> {
+        return (readValue(buffer) as Long?)?.let {
+          LlmHistoryRole.ofRaw(it.toInt())
+        }
+      }
+      132.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           IncomingIntent.fromList(it)
         }
       }
-      131.toByte() -> {
+      133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           ApkSigningResult.fromList(it)
+        }
+      }
+      134.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LlmHistoryMessage.fromList(it)
+        }
+      }
+      135.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LlmGenerationConfig.fromList(it)
+        }
+      }
+      136.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LlmContextStats.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -331,18 +517,39 @@ private open class AppApiPigeonCodec : StandardMessageCodec() {
         stream.write(129)
         writeValue(stream, value.raw.toLong())
       }
-      is IncomingIntent -> {
+      is LlmBackend -> {
         stream.write(130)
+        writeValue(stream, value.raw.toLong())
+      }
+      is LlmHistoryRole -> {
+        stream.write(131)
+        writeValue(stream, value.raw.toLong())
+      }
+      is IncomingIntent -> {
+        stream.write(132)
         writeValue(stream, value.toList())
       }
       is ApkSigningResult -> {
-        stream.write(131)
+        stream.write(133)
+        writeValue(stream, value.toList())
+      }
+      is LlmHistoryMessage -> {
+        stream.write(134)
+        writeValue(stream, value.toList())
+      }
+      is LlmGenerationConfig -> {
+        stream.write(135)
+        writeValue(stream, value.toList())
+      }
+      is LlmContextStats -> {
+        stream.write(136)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
     }
   }
 }
+
 
 /**
  * Android package-install + signing operations (implemented in Kotlin).
@@ -538,6 +745,406 @@ class FlutterIntentApi(private val binaryMessenger: BinaryMessenger, private val
     val channelName = "dev.flutter.pigeon.linkvault.FlutterIntentApi.onIntent$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
     channel.send(listOf(intentArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(AppApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+}
+/**
+ * Native Gemma inference (download, load, stream) on Android.
+ *
+ * Generated interface from Pigeon that represents a handler of messages from Flutter.
+ */
+interface LlmHostApi {
+  fun isModelInstalled(fileName: String): Boolean
+  /** Downloads to app files dir. Progress via [FlutterLlmApi.onDownloadProgress]. */
+  fun startModelDownload(url: String, fileName: String, bearerToken: String?)
+  fun cancelModelDownload()
+  fun uninstallModel(fileName: String)
+  /** Loads weights and prepares a session. Heavy; call off UI thread (native does). */
+  fun loadModel(fileName: String, backend: LlmBackend, maxTokens: Long, callback: (Result<Unit>) -> Unit)
+  fun unloadModel()
+  fun resetConversation()
+  /** Replays Drift history into the native session (no generation). */
+  fun replayHistory(messages: List<LlmHistoryMessage>)
+  /** Queues the user turn (call [startGeneration] after). */
+  fun sendUserMessage(text: String)
+  /** After a tool call, send result and call [startGeneration] again. */
+  fun sendToolResult(toolName: String, resultJson: String)
+  /** Streams tokens via [FlutterLlmApi.onToken] until done or tool call. */
+  fun startGeneration()
+  fun stopGeneration()
+  /** `Using GPU`, `Using CPU`, or null if unloaded. */
+  fun getActiveBackendLabel(): String?
+  /** Updates sampler settings; recreates the native session with the same history. */
+  fun applyGenerationConfig(config: LlmGenerationConfig)
+  /** Rough token estimate for the loaded session (history + pending). */
+  fun getContextStats(): LlmContextStats
+
+  companion object {
+    /** The codec used by LlmHostApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      AppApiPigeonCodec()
+    }
+    /** Sets up an instance of `LlmHostApi` to handle messages through the `binaryMessenger`. */
+    @JvmOverloads
+    fun setUp(binaryMessenger: BinaryMessenger, api: LlmHostApi?, messageChannelSuffix: String = "") {
+      val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.isModelInstalled$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val fileNameArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              listOf(api.isModelInstalled(fileNameArg))
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.startModelDownload$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val urlArg = args[0] as String
+            val fileNameArg = args[1] as String
+            val bearerTokenArg = args[2] as String?
+            val wrapped: List<Any?> = try {
+              api.startModelDownload(urlArg, fileNameArg, bearerTokenArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.cancelModelDownload$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.cancelModelDownload()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.uninstallModel$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val fileNameArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.uninstallModel(fileNameArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.loadModel$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val fileNameArg = args[0] as String
+            val backendArg = args[1] as LlmBackend
+            val maxTokensArg = args[2] as Long
+            api.loadModel(fileNameArg, backendArg, maxTokensArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(AppApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(AppApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.unloadModel$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.unloadModel()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.resetConversation$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.resetConversation()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.replayHistory$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val messagesArg = args[0] as List<LlmHistoryMessage>
+            val wrapped: List<Any?> = try {
+              api.replayHistory(messagesArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.sendUserMessage$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val textArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.sendUserMessage(textArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.sendToolResult$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val toolNameArg = args[0] as String
+            val resultJsonArg = args[1] as String
+            val wrapped: List<Any?> = try {
+              api.sendToolResult(toolNameArg, resultJsonArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.startGeneration$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.startGeneration()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.stopGeneration$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.stopGeneration()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.getActiveBackendLabel$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.getActiveBackendLabel())
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.applyGenerationConfig$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val configArg = args[0] as LlmGenerationConfig
+            val wrapped: List<Any?> = try {
+              api.applyGenerationConfig(configArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.linkvault.LlmHostApi.getContextStats$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.getContextStats())
+            } catch (exception: Throwable) {
+              AppApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+}
+/**
+ * Streaming and download events from Kotlin to Dart.
+ *
+ * Generated class from Pigeon that represents Flutter messages that can be called from Kotlin.
+ */
+class FlutterLlmApi(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
+  companion object {
+    /** The codec used by FlutterLlmApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      AppApiPigeonCodec()
+    }
+  }
+  fun onDownloadProgress(percentArg: Long, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.linkvault.FlutterLlmApi.onDownloadProgress$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(percentArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(AppApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+  fun onToken(tokenArg: String, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.linkvault.FlutterLlmApi.onToken$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(tokenArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(AppApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+  fun onGenerationComplete(fullTextArg: String, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.linkvault.FlutterLlmApi.onGenerationComplete$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(fullTextArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(AppApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+  fun onFunctionCall(nameArg: String, argsJsonArg: String, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.linkvault.FlutterLlmApi.onFunctionCall$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(nameArg, argsJsonArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(AppApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+  fun onLlmError(codeArg: String, messageArg: String, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.linkvault.FlutterLlmApi.onLlmError$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(codeArg, messageArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))

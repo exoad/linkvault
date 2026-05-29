@@ -117,6 +117,17 @@ enum IntentKind {
   shareText,
 }
 
+enum LlmBackend {
+  cpu,
+  gpu,
+}
+
+enum LlmHistoryRole {
+  user,
+  assistant,
+  tool,
+}
+
 /// A normalized external intent delivered from Kotlin to Flutter.
 class IncomingIntent {
   IncomingIntent({
@@ -221,6 +232,163 @@ class ApkSigningResult {
   int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
 }
 
+class LlmHistoryMessage {
+  LlmHistoryMessage({
+    required this.role,
+    required this.content,
+    this.toolName,
+  });
+
+  LlmHistoryRole role;
+
+  String content;
+
+  String? toolName;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      role,
+      content,
+      toolName,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static LlmHistoryMessage decode(Object result) {
+    result as List<Object?>;
+    return LlmHistoryMessage(
+      role: result[0]! as LlmHistoryRole,
+      content: result[1]! as String,
+      toolName: result[2] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LlmHistoryMessage || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(role, other.role) && _deepEquals(content, other.content) && _deepEquals(toolName, other.toolName);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+/// Sampling and context limits (applied when loading or updating session).
+class LlmGenerationConfig {
+  LlmGenerationConfig({
+    required this.temperature,
+    required this.topK,
+    required this.topP,
+    required this.maxOutputTokens,
+    required this.contextTokenLimit,
+  });
+
+  double temperature;
+
+  int topK;
+
+  double topP;
+
+  int maxOutputTokens;
+
+  int contextTokenLimit;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      temperature,
+      topK,
+      topP,
+      maxOutputTokens,
+      contextTokenLimit,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static LlmGenerationConfig decode(Object result) {
+    result as List<Object?>;
+    return LlmGenerationConfig(
+      temperature: result[0]! as double,
+      topK: result[1]! as int,
+      topP: result[2]! as double,
+      maxOutputTokens: result[3]! as int,
+      contextTokenLimit: result[4]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LlmGenerationConfig || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(temperature, other.temperature) && _deepEquals(topK, other.topK) && _deepEquals(topP, other.topP) && _deepEquals(maxOutputTokens, other.maxOutputTokens) && _deepEquals(contextTokenLimit, other.contextTokenLimit);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+/// Estimated context fill for the active native session.
+class LlmContextStats {
+  LlmContextStats({
+    required this.usedTokens,
+    required this.maxTokens,
+  });
+
+  int usedTokens;
+
+  int maxTokens;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      usedTokens,
+      maxTokens,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static LlmContextStats decode(Object result) {
+    result as List<Object?>;
+    return LlmContextStats(
+      usedTokens: result[0]! as int,
+      maxTokens: result[1]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LlmContextStats || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(usedTokens, other.usedTokens) && _deepEquals(maxTokens, other.maxTokens);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
 
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
@@ -232,11 +400,26 @@ class _PigeonCodec extends StandardMessageCodec {
     }    else if (value is IntentKind) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    }    else if (value is IncomingIntent) {
+    }    else if (value is LlmBackend) {
       buffer.putUint8(130);
+      writeValue(buffer, value.index);
+    }    else if (value is LlmHistoryRole) {
+      buffer.putUint8(131);
+      writeValue(buffer, value.index);
+    }    else if (value is IncomingIntent) {
+      buffer.putUint8(132);
       writeValue(buffer, value.encode());
     }    else if (value is ApkSigningResult) {
-      buffer.putUint8(131);
+      buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    }    else if (value is LlmHistoryMessage) {
+      buffer.putUint8(134);
+      writeValue(buffer, value.encode());
+    }    else if (value is LlmGenerationConfig) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    }    else if (value is LlmContextStats) {
+      buffer.putUint8(136);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -250,9 +433,21 @@ class _PigeonCodec extends StandardMessageCodec {
         final value = readValue(buffer) as int?;
         return value == null ? null : IntentKind.values[value];
       case 130:
-        return IncomingIntent.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : LlmBackend.values[value];
       case 131:
+        final value = readValue(buffer) as int?;
+        return value == null ? null : LlmHistoryRole.values[value];
+      case 132:
+        return IncomingIntent.decode(readValue(buffer)!);
+      case 133:
         return ApkSigningResult.decode(readValue(buffer)!);
+      case 134:
+        return LlmHistoryMessage.decode(readValue(buffer)!);
+      case 135:
+        return LlmGenerationConfig.decode(readValue(buffer)!);
+      case 136:
+        return LlmContextStats.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -447,6 +642,429 @@ abstract class FlutterIntentApi {
           final IncomingIntent arg_intent = args[0]! as IncomingIntent;
           try {
             api.onIntent(arg_intent);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+  }
+}
+
+/// Native Gemma inference (download, load, stream) on Android.
+class LlmHostApi {
+  /// Constructor for [LlmHostApi].  The [binaryMessenger] named argument is
+  /// available for dependency injection.  If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  LlmHostApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
+      : pigeonVar_binaryMessenger = binaryMessenger,
+        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  Future<bool> isModelInstalled(String fileName) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.isModelInstalled$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[fileName]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: false,
+    )
+    ;
+    return pigeonVar_replyValue! as bool;
+  }
+
+  /// Downloads to app files dir. Progress via [FlutterLlmApi.onDownloadProgress].
+  Future<void> startModelDownload(String url, String fileName, String? bearerToken) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.startModelDownload$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[url, fileName, bearerToken]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  Future<void> cancelModelDownload() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.cancelModelDownload$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  Future<void> uninstallModel(String fileName) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.uninstallModel$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[fileName]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  /// Loads weights and prepares a session. Heavy; call off UI thread (native does).
+  Future<void> loadModel(String fileName, LlmBackend backend, int maxTokens) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.loadModel$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[fileName, backend, maxTokens]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  Future<void> unloadModel() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.unloadModel$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  Future<void> resetConversation() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.resetConversation$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  /// Replays Drift history into the native session (no generation).
+  Future<void> replayHistory(List<LlmHistoryMessage> messages) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.replayHistory$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[messages]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  /// Queues the user turn (call [startGeneration] after).
+  Future<void> sendUserMessage(String text) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.sendUserMessage$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[text]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  /// After a tool call, send result and call [startGeneration] again.
+  Future<void> sendToolResult(String toolName, String resultJson) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.sendToolResult$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[toolName, resultJson]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  /// Streams tokens via [FlutterLlmApi.onToken] until done or tool call.
+  Future<void> startGeneration() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.startGeneration$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  Future<void> stopGeneration() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.stopGeneration$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  /// `Using GPU`, `Using CPU`, or null if unloaded.
+  Future<String?> getActiveBackendLabel() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.getActiveBackendLabel$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+    return pigeonVar_replyValue as String?;
+  }
+
+  /// Updates sampler settings; recreates the native session with the same history.
+  Future<void> applyGenerationConfig(LlmGenerationConfig config) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.applyGenerationConfig$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[config]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+
+  /// Rough token estimate for the loaded session (history + pending).
+  Future<LlmContextStats> getContextStats() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.LlmHostApi.getContextStats$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: false,
+    )
+    ;
+    return pigeonVar_replyValue! as LlmContextStats;
+  }
+}
+
+/// Streaming and download events from Kotlin to Dart.
+abstract class FlutterLlmApi {
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  void onDownloadProgress(int percent);
+
+  void onToken(String token);
+
+  void onGenerationComplete(String fullText);
+
+  void onFunctionCall(String name, String argsJson);
+
+  void onLlmError(String code, String message);
+
+  static void setUp(FlutterLlmApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.linkvault.FlutterLlmApi.onDownloadProgress$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final int arg_percent = args[0]! as int;
+          try {
+            api.onDownloadProgress(arg_percent);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.linkvault.FlutterLlmApi.onToken$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final String arg_token = args[0]! as String;
+          try {
+            api.onToken(arg_token);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.linkvault.FlutterLlmApi.onGenerationComplete$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final String arg_fullText = args[0]! as String;
+          try {
+            api.onGenerationComplete(arg_fullText);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.linkvault.FlutterLlmApi.onFunctionCall$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final String arg_name = args[0]! as String;
+          final String arg_argsJson = args[1]! as String;
+          try {
+            api.onFunctionCall(arg_name, arg_argsJson);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.linkvault.FlutterLlmApi.onLlmError$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final String arg_code = args[0]! as String;
+          final String arg_message = args[1]! as String;
+          try {
+            api.onLlmError(arg_code, arg_message);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

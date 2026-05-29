@@ -5,6 +5,9 @@ final class GetCurrentTimeTool implements ChatTool {
   String get name => 'get_current_time';
 
   @override
+  String get label => 'Current time';
+
+  @override
   String get description =>
       'Returns the current local date, time, and timezone name.';
 

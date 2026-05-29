@@ -1,17 +1,20 @@
-import 'package:flutter_gemma/pigeon.g.dart';
-
 import '../../data/chat_repository.dart';
 import '../../models/chat_message.dart';
 import '../models/chat_model_registry.dart';
-import '../runtime/gemma_runtime.dart';
 import '../runtime/inference_backend.dart';
 import '../runtime/local_llm_runtime.dart';
+import '../runtime/native_llm_runtime.dart';
 import '../tools/tool_registry.dart';
+import 'chat_compressor.dart';
+import 'chat_context_estimator.dart';
 import 'chat_hf_token_preferences.dart';
+import 'chat_inference_preferences.dart';
+import 'chat_session_preferences.dart';
+import 'tool_message_payload.dart';
 
 export '../runtime/local_llm_runtime.dart' show LlmStreamEvent, LlmTokenEvent;
 
-/// Orchestrates model install, Drift history, and tool-augmented generation.
+/// Orchestrates native Kotlin inference, Drift history, and tools.
 final class ChatService {
   ChatService({
     required this.repository,
@@ -19,21 +22,55 @@ final class ChatService {
     required ToolRegistry toolRegistry,
     required this.backendPrefs,
     required this.hfTokenPrefs,
-  }) : _tools = toolRegistry;
+    required this.inferencePrefs,
+    required this.sessionPrefs,
+  }) : _tools = toolRegistry,
+       _compressor = ChatCompressor(repository: repository);
+
+  factory ChatService.android({
+    required ChatRepository repository,
+    required ToolRegistry toolRegistry,
+    required InferenceBackendPreferences backendPrefs,
+    required ChatHfTokenPreferences hfTokenPrefs,
+    required ChatInferencePreferences inferencePrefs,
+    required ChatSessionPreferences sessionPrefs,
+  }) {
+    return ChatService(
+      repository: repository,
+      runtime: NativeLlmRuntime(),
+      toolRegistry: toolRegistry,
+      backendPrefs: backendPrefs,
+      hfTokenPrefs: hfTokenPrefs,
+      inferencePrefs: inferencePrefs,
+      sessionPrefs: sessionPrefs,
+    );
+  }
 
   final ChatRepository repository;
-  final GemmaRuntime runtime;
+  final LocalLlmRuntime runtime;
   final ToolRegistry _tools;
+  final ChatCompressor _compressor;
   final InferenceBackendPreferences backendPrefs;
   final ChatHfTokenPreferences hfTokenPrefs;
+  final ChatInferencePreferences inferencePrefs;
+  final ChatSessionPreferences sessionPrefs;
 
-  PreferredBackend? get activeBackend => runtime.activeBackend;
+  InferenceBackend? get activeBackend => runtime.activeBackend;
 
   String get backendStatusLabel {
     final backend = runtime.activeBackend;
     if (backend == null) return '';
-    return backend == PreferredBackend.gpu ? 'Using GPU' : 'Using CPU';
+    return 'Using ${backend.label}';
   }
+
+  String toolLabel(String name) => _tools.labelFor(name);
+
+  Stream<List<ChatSessionModel>> watchSessions() => repository.watchSessions();
+
+  Future<String?> get savedSessionId async => sessionPrefs.activeSessionId;
+
+  Future<void> rememberSession(String sessionId) =>
+      sessionPrefs.setActiveSessionId(sessionId);
 
   Future<bool> isModelInstalled() => runtime.isModelInstalled();
 
@@ -47,18 +84,44 @@ final class ChatService {
   Future<void> uninstallModel() => runtime.uninstallModel();
 
   Future<void> ensureModelReady() async {
-    final backend = backendPrefs.backend.toPreferredBackend();
     await runtime.ensureReady(
-      preferredBackend: backend,
-      tools: _tools.gemmaTools,
+      backend: backendPrefs.backend,
+      generationConfig: inferencePrefs.toPigeon(),
     );
   }
 
-  Future<String> createSession({String? title}) {
-    return repository.createSession(
+  Future<void> applyInferenceSettings() async {
+    await runtime.applyGenerationConfig(inferencePrefs.toPigeon());
+  }
+
+  Future<LlmContextUsage> contextUsageFor(String sessionId) async {
+    final native = await runtime.readContextStats();
+    if (native != null) {
+      return native;
+    }
+    final used = ChatContextEstimator.estimateTokens(
+      await repository.getMessages(sessionId),
+    );
+    return (
+      usedTokens: used,
+      maxTokens: inferencePrefs.contextTokenLimit,
+    );
+  }
+
+  Future<String> createSession({String? title}) async {
+    final id = await repository.createSession(
       modelId: ChatModelRegistry.defaultModel.id,
       title: title ?? 'New chat',
     );
+    await rememberSession(id);
+    return id;
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    await repository.deleteSession(sessionId);
+    if (sessionPrefs.activeSessionId == sessionId) {
+      await sessionPrefs.setActiveSessionId(null);
+    }
   }
 
   Future<void> prepareSession(String sessionId) async {
@@ -66,13 +129,18 @@ final class ChatService {
     await runtime.resetChat();
     final rows = await repository.getMessages(sessionId);
     final history = rows
-        .where((m) => m.role != ChatMessageRole.tool || m.toolName != null)
+        .where(
+          (m) =>
+              m.role != ChatMessageRole.thinking &&
+              (m.role != ChatMessageRole.tool || m.toolName != null),
+        )
         .map(
           (m) => LlmHistoryMessage(
             role: switch (m.role) {
               ChatMessageRole.user => LlmHistoryRole.user,
               ChatMessageRole.assistant => LlmHistoryRole.assistant,
               ChatMessageRole.tool => LlmHistoryRole.tool,
+              ChatMessageRole.thinking => LlmHistoryRole.assistant,
             },
             content: m.content,
             toolName: m.toolName,
@@ -80,6 +148,18 @@ final class ChatService {
         )
         .toList();
     await runtime.replayHistory(history);
+    await rememberSession(sessionId);
+  }
+
+  Future<int> compressSession(String sessionId, {int keepRecent = 8}) async {
+    final removed = await _compressor.compressSession(
+      sessionId,
+      keepRecent: keepRecent,
+    );
+    if (removed > 0) {
+      await prepareSession(sessionId);
+    }
+    return removed;
   }
 
   Stream<LlmStreamEvent> sendMessage({
@@ -101,18 +181,53 @@ final class ChatService {
     );
 
     final assistantBuffer = StringBuffer();
+    final thinkingBuffer = StringBuffer();
+    String? openToolMessageId;
+    String? openToolArgsSummary;
+
     await for (final event in stream) {
       switch (event) {
+        case LlmThinkingTokenEvent(:final token):
+          thinkingBuffer.write(token);
+          yield event;
+        case LlmThinkingDoneEvent(:final fullText):
+          thinkingBuffer.write(fullText);
+          final thinking = thinkingBuffer.toString().trim();
+          if (thinking.isNotEmpty) {
+            await repository.insertMessage(
+              sessionId: sessionId,
+              role: ChatMessageRole.thinking,
+              content: thinking,
+            );
+            thinkingBuffer.clear();
+          }
+          yield event;
         case LlmTokenEvent(:final token):
           assistantBuffer.write(token);
           yield event;
         case LlmToolCallEvent(:final name, :final argsSummary):
-          await repository.insertMessage(
+          openToolArgsSummary = argsSummary;
+          openToolMessageId = await repository.insertMessage(
             sessionId: sessionId,
             role: ChatMessageRole.tool,
-            content: argsSummary,
+            content: ToolMessagePayload.encode(argsSummary: argsSummary),
             toolName: name,
           );
+          yield event;
+        case LlmToolResultEvent(:final result):
+          final toolId = openToolMessageId;
+          final summary = openToolArgsSummary;
+          if (toolId != null && summary != null) {
+            await repository.updateMessageContent(
+              messageId: toolId,
+              content: ToolMessagePayload.encode(
+                argsSummary: summary,
+                result: result,
+              ),
+            );
+          }
+          openToolMessageId = null;
+          openToolArgsSummary = null;
           yield event;
         case LlmDoneEvent(:final fullText):
           final content =

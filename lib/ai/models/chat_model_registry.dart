@@ -1,18 +1,18 @@
-import 'package:flutter_gemma/core/model.dart';
-
 import 'chat_model_definition.dart';
 
-/// Registry of on-device chat models (v1: single Gemma E2B entry).
+/// Registry of on-device chat models (v1: Gemma 4 E2B via LiteRT-LM).
 abstract final class ChatModelRegistry {
+  /// [google/gemma-4-E2B](https://huggingface.co/google/gemma-4-E2B) on-device bundle:
+  /// [litert-community/gemma-4-E2B-it-litert-lm](https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm)
   static const gemma4E2b = ChatModelDefinition(
     id: 'gemma-4-e2b',
     displayName: 'Gemma 4 E2B',
-    modelType: ModelType.gemmaIt,
     installUrl:
-        'https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task',
-    modelFileName: 'gemma-3n-E2B-it-int4.task',
-    sizeLabel: '~3.1 GB',
-    needsHuggingFaceAuth: true,
+        'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm',
+    modelFileName: 'gemma-4-E2B-it.litertlm',
+    sizeLabel: '~2.6 GB',
+    needsHuggingFaceAuth: false,
+    maxTokens: 512,
   );
 
   static const List<ChatModelDefinition> all = [gemma4E2b];

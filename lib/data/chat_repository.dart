@@ -29,19 +29,32 @@ class ChatRepository {
     return row.id;
   }
 
-  Future<void> insertMessage({
+  Future<void> deleteMessagesByIds(List<String> ids) =>
+      _db.deleteChatMessagesByIds(ids);
+
+  Future<String> insertMessage({
     required String sessionId,
     required ChatMessageRole role,
     required String content,
     String? toolName,
+    DateTime? createdAt,
   }) async {
-    await _db.insertChatMessage(
+    final row = await _db.insertChatMessage(
       sessionId: sessionId,
       role: role.name,
       content: content,
       toolName: toolName,
+      createdAt: createdAt,
     );
     await touchSession(sessionId);
+    return row.id;
+  }
+
+  Future<void> updateMessageContent({
+    required String messageId,
+    required String content,
+  }) async {
+    await _db.updateChatMessageContent(id: messageId, content: content);
   }
 
   Future<void> touchSession(String sessionId, {String? preview}) async {

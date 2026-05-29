@@ -1,9 +1,11 @@
-import 'package:flutter_gemma/core/tool.dart';
-import 'package:flutter_gemma/pigeon.g.dart';
-
+import '../../platform/app_api.g.dart' as pigeon;
 import '../models/chat_model_definition.dart';
+import 'inference_backend.dart';
 
-/// Abstraction for swappable on-device LLM backends (v1: [GemmaRuntime] only).
+/// Context fill reported by native runtime or estimated in Dart.
+typedef LlmContextUsage = ({int usedTokens, int maxTokens});
+
+/// Swappable on-device LLM backend (v1: [NativeLlmRuntime] on Android).
 abstract class LocalLlmRuntime {
   ChatModelDefinition get model;
 
@@ -17,15 +19,28 @@ abstract class LocalLlmRuntime {
   Future<void> uninstallModel();
 
   Future<void> ensureReady({
-    required PreferredBackend preferredBackend,
-    List<Tool> tools = const [],
+    required InferenceBackend backend,
+    pigeon.LlmGenerationConfig? generationConfig,
   });
 
-  PreferredBackend? get activeBackend;
+  Future<void> applyGenerationConfig(pigeon.LlmGenerationConfig config);
+
+  Future<LlmContextUsage?> readContextStats();
+
+  InferenceBackend? get activeBackend;
+
+  Future<void> resetChat();
 
   Future<void> replayHistory(List<LlmHistoryMessage> messages);
 
   Stream<LlmStreamEvent> sendUserMessage(String text);
+
+  Stream<LlmStreamEvent> sendUserMessageWithToolHandler({
+    required String text,
+    required Future<String> Function(String name, Map<String, dynamic> args)
+        onToolCall,
+    int maxToolRounds,
+  });
 
   Future<void> stopGeneration();
 
@@ -56,10 +71,31 @@ class LlmTokenEvent extends LlmStreamEvent {
   final String token;
 }
 
+class LlmThinkingTokenEvent extends LlmStreamEvent {
+  const LlmThinkingTokenEvent(this.token);
+  final String token;
+}
+
+class LlmThinkingDoneEvent extends LlmStreamEvent {
+  const LlmThinkingDoneEvent(this.fullText);
+  final String fullText;
+}
+
 class LlmToolCallEvent extends LlmStreamEvent {
-  const LlmToolCallEvent({required this.name, required this.argsSummary});
+  const LlmToolCallEvent({
+    required this.name,
+    required this.args,
+    required this.argsSummary,
+  });
   final String name;
+  final Map<String, dynamic> args;
   final String argsSummary;
+}
+
+class LlmToolResultEvent extends LlmStreamEvent {
+  const LlmToolResultEvent({required this.name, required this.result});
+  final String name;
+  final String result;
 }
 
 class LlmDoneEvent extends LlmStreamEvent {

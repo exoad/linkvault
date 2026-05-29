@@ -5,14 +5,16 @@
         <item name="windowSplashScreenAnimatedIcon">@drawable/android12splash</item>
         <item name="windowSplashScreenIconBackgroundColor">@color/linkvault_surface</item>
         <item name="postSplashScreenTheme">@style/NormalTheme</item>
-        <item name="android:forceDarkAllowed">true</item>
-        <item name="android:windowFullscreen">false</item>
-        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:windowSplashScreenBackground">#000000</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/android12splash</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#000000</item>
     </style>
-
     <style name="NormalTheme" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@color/linkvault_surface</item>
         <item name="android:colorBackground">@color/linkvault_surface</item>

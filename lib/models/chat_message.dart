@@ -1,7 +1,8 @@
 enum ChatMessageRole {
   user,
   assistant,
-  tool;
+  tool,
+  thinking;
 
   static ChatMessageRole fromStorage(String value) {
     return ChatMessageRole.values.firstWhere(
@@ -29,6 +30,10 @@ class ChatMessageModel {
   final String? toolName;
 
   bool get isUser => role == ChatMessageRole.user;
+
+  bool get isThinking => role == ChatMessageRole.thinking;
+
+  bool get isTool => role == ChatMessageRole.tool;
 }
 
 class ChatSessionModel {

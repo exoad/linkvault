@@ -8,6 +8,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import net.exoad.linkvault.llm.LlmHostApiImpl
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MainActivity : FlutterActivity(), IntentHostApi, UiHostApi {
 
     private var flutterIntentApi: FlutterIntentApi? = null
+    private var llmHostApi: LlmHostApiImpl? = null
 
     private var initialIntent: IncomingIntent? = null
 
@@ -33,9 +35,14 @@ class MainActivity : FlutterActivity(), IntentHostApi, UiHostApi {
         IntentHostApi.setUp(messenger, this)
         UiHostApi.setUp(messenger, this)
         flutterIntentApi = FlutterIntentApi(messenger)
+        llmHostApi = LlmHostApiImpl(this, FlutterLlmApi(messenger)).also {
+            LlmHostApi.setUp(messenger, it)
+        }
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        llmHostApi?.dispose()
+        llmHostApi = null
         flutterIntentApi = null
         super.cleanUpFlutterEngine(flutterEngine)
     }

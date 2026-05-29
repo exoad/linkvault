@@ -407,14 +407,24 @@ class AppDatabase extends _$AppDatabase {
     await (delete(chatSessions)..where((t) => t.id.equals(id))).go();
   }
 
+  Future<void> updateChatMessageContent({
+    required String id,
+    required String content,
+  }) async {
+    await (update(chatMessages)..where((t) => t.id.equals(id))).write(
+      ChatMessagesCompanion(content: Value(content)),
+    );
+  }
+
   Future<ChatMessage> insertChatMessage({
     required String sessionId,
     required String role,
     required String content,
     String? toolName,
+    DateTime? createdAt,
   }) async {
     final id = const Uuid().v4();
-    final now = DateTime.now();
+    final now = createdAt ?? DateTime.now();
     await into(chatMessages).insert(
       ChatMessagesCompanion.insert(
         id: id,
@@ -431,6 +441,11 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteChatMessagesInSession(String sessionId) async {
     await (delete(chatMessages)..where((t) => t.sessionId.equals(sessionId)))
         .go();
+  }
+
+  Future<void> deleteChatMessagesByIds(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (delete(chatMessages)..where((t) => t.id.isIn(ids))).go();
   }
 }
 

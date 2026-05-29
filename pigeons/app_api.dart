@@ -97,3 +97,114 @@ abstract class IntentHostApi {
 abstract class FlutterIntentApi {
   void onIntent(IncomingIntent intent);
 }
+
+// --- On-device LLM (Kotlin LiteRT-LM / MediaPipe, no flutter_gemma) ---
+
+enum LlmBackend {
+  cpu,
+  gpu,
+}
+
+enum LlmHistoryRole {
+  user,
+  assistant,
+  tool,
+}
+
+class LlmHistoryMessage {
+  LlmHistoryMessage({
+    required this.role,
+    required this.content,
+    this.toolName,
+  });
+
+  final LlmHistoryRole role;
+  final String content;
+  final String? toolName;
+}
+
+/// Sampling and context limits (applied when loading or updating session).
+class LlmGenerationConfig {
+  LlmGenerationConfig({
+    required this.temperature,
+    required this.topK,
+    required this.topP,
+    required this.maxOutputTokens,
+    required this.contextTokenLimit,
+  });
+
+  final double temperature;
+  final int topK;
+  final double topP;
+  final int maxOutputTokens;
+  final int contextTokenLimit;
+}
+
+/// Estimated context fill for the active native session.
+class LlmContextStats {
+  LlmContextStats({
+    required this.usedTokens,
+    required this.maxTokens,
+  });
+
+  final int usedTokens;
+  final int maxTokens;
+}
+
+/// Native Gemma inference (download, load, stream) on Android.
+@HostApi()
+abstract class LlmHostApi {
+  bool isModelInstalled(String fileName);
+
+  /// Downloads to app files dir. Progress via [FlutterLlmApi.onDownloadProgress].
+  void startModelDownload(String url, String fileName, String? bearerToken);
+
+  void cancelModelDownload();
+
+  void uninstallModel(String fileName);
+
+  /// Loads weights and prepares a session. Heavy; call off UI thread (native does).
+  @async
+  void loadModel(String fileName, LlmBackend backend, int maxTokens);
+
+  void unloadModel();
+
+  void resetConversation();
+
+  /// Replays Drift history into the native session (no generation).
+  void replayHistory(List<LlmHistoryMessage> messages);
+
+  /// Queues the user turn (call [startGeneration] after).
+  void sendUserMessage(String text);
+
+  /// After a tool call, send result and call [startGeneration] again.
+  void sendToolResult(String toolName, String resultJson);
+
+  /// Streams tokens via [FlutterLlmApi.onToken] until done or tool call.
+  void startGeneration();
+
+  void stopGeneration();
+
+  /// `Using GPU`, `Using CPU`, or null if unloaded.
+  String? getActiveBackendLabel();
+
+  /// Updates sampler settings; recreates the native session with the same history.
+  void applyGenerationConfig(LlmGenerationConfig config);
+
+  /// Rough token estimate for the loaded session (history + pending).
+  LlmContextStats getContextStats();
+}
+
+/// Streaming and download events from Kotlin to Dart.
+@FlutterApi()
+abstract class FlutterLlmApi {
+  void onDownloadProgress(int percent);
+
+  void onToken(String token);
+
+  void onGenerationComplete(String fullText);
+
+  void onFunctionCall(String name, String argsJson);
+
+  void onLlmError(String code, String message);
+}

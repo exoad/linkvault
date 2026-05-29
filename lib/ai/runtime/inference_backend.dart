@@ -1,16 +1,17 @@
-import 'package:flutter_gemma/pigeon.g.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// User-selectable inference backend (maps to [PreferredBackend] at runtime).
+import '../../platform/app_api.g.dart';
+
+/// User-selectable inference backend for native Gemma.
 enum InferenceBackend {
   cpu,
   gpu,
 }
 
 extension InferenceBackendX on InferenceBackend {
-  PreferredBackend toPreferredBackend() => switch (this) {
-        InferenceBackend.cpu => PreferredBackend.cpu,
-        InferenceBackend.gpu => PreferredBackend.gpu,
+  LlmBackend toPigeon() => switch (this) {
+        InferenceBackend.cpu => LlmBackend.cpu,
+        InferenceBackend.gpu => LlmBackend.gpu,
       };
 
   String get label => switch (this) {

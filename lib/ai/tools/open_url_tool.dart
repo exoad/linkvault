@@ -7,6 +7,9 @@ final class OpenUrlTool implements ChatTool {
   String get name => 'open_url';
 
   @override
+  String get label => 'Open link';
+
+  @override
   String get description => 'Open a valid http(s) URL in the system browser.';
 
   @override

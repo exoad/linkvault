@@ -10,9 +10,8 @@ void main() {
     expect(result, contains('T'));
   });
 
-  test('tool registry lists default tools', () {
-    final registry = ToolRegistry();
-    expect(registry.gemmaTools.length, 3);
+  test('tool registry has three default tools', () {
+    expect(ToolRegistry.defaultTools.length, 3);
   });
 
   test('web_search handles empty query', () async {

@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' show StreamSubscription, Timer, unawaited;
 
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -13,9 +13,13 @@ import '../../theme/linkvault_typography.dart';
 import '../../widgets/hub_app_back_button.dart';
 import '../../widgets/linkvault_ambient_background.dart';
 import '../../widgets/linkvault_animated_ambient.dart';
+import 'chat_drawer.dart';
 import 'chat_input_bar.dart';
 import 'chat_message_tile.dart';
 import 'chat_settings_sheet.dart';
+import 'chat_streaming_draft.dart';
+import 'widgets/chat_ai_glow.dart';
+import 'widgets/chat_context_ring.dart';
 
 enum _ChatUiPhase { checking, needsDownload, downloading, loading, ready, error }
 
@@ -38,7 +42,12 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
   StreamSubscription<LlmStreamEvent>? _streamSub;
-  final List<ChatMessageModel> _pendingMessages = [];
+  ChatStreamingDraft? _draft;
+  bool _thinkingExpanded = true;
+  int _contextUsed = 0;
+  int _contextMax = 8192;
+  Timer? _contextTimer;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   ChatService get _chat => AppScope.chatServiceOf(context);
 
@@ -46,11 +55,16 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   void initState() {
     super.initState();
     _inputController.addListener(() => setState(() {}));
+    _contextTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => unawaited(_refreshContext()),
+    );
     _bootstrap();
   }
 
   @override
   void dispose() {
+    _contextTimer?.cancel();
     _streamSub?.cancel();
     _inputController.dispose();
     _scrollController.dispose();
@@ -104,19 +118,39 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
     }
   }
 
-  Future<void> _openReadySession() async {
+  Future<void> _refreshContext() async {
+    final sessionId = _sessionId;
+    if (sessionId == null || _phase != _ChatUiPhase.ready) return;
+    try {
+      final usage = await _chat.contextUsageFor(sessionId);
+      if (!mounted) return;
+      setState(() {
+        _contextUsed = usage.usedTokens;
+        _contextMax = usage.maxTokens;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _openReadySession({String? sessionId}) async {
     setState(() => _phase = _ChatUiPhase.loading);
 
     try {
-      var sessionId = _sessionId;
-      sessionId ??= await _chat.createSession();
-      await _chat.prepareSession(sessionId);
+      var id = sessionId ?? _sessionId ?? await _chat.savedSessionId;
+      if (id != null) {
+        try {
+          await _chat.prepareSession(id);
+        } catch (_) {
+          id = null;
+        }
+      }
+      id ??= await _chat.createSession();
+      await _refreshContext();
       if (!mounted) return;
       setState(() {
-        _sessionId = sessionId;
+        _sessionId = id;
         _phase = _ChatUiPhase.ready;
         _backendLabel = _chat.backendStatusLabel;
-        _pendingMessages.clear();
+        _draft = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -130,13 +164,95 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   Future<void> _newChat() async {
     await _streamSub?.cancel();
     final sessionId = await _chat.createSession();
-    await _chat.prepareSession(sessionId);
+    await _openReadySession(sessionId: sessionId);
     if (!mounted) return;
     setState(() {
-      _sessionId = sessionId;
-      _pendingMessages.clear();
+      _draft = null;
       _isGenerating = false;
     });
+  }
+
+  Future<void> _switchSession(String sessionId) async {
+    await _streamSub?.cancel();
+    await _openReadySession(sessionId: sessionId);
+    if (!mounted) return;
+    setState(() {
+      _draft = null;
+      _isGenerating = false;
+    });
+  }
+
+  Future<void> _deleteSession(String sessionId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete chat?'),
+        content: const Text('This conversation will be removed from this device.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _chat.deleteSession(sessionId);
+    if (_sessionId == sessionId) {
+      await _newChat();
+    }
+  }
+
+  Future<void> _compressChat() async {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Compress conversation?'),
+        content: const Text(
+          'Older messages are merged into a short summary. '
+          'The last 8 turns stay intact to free context.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Compress'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _phase = _ChatUiPhase.loading);
+    try {
+      final removed = await _chat.compressSession(sessionId);
+      await _refreshContext();
+      if (!mounted) return;
+      setState(() => _phase = _ChatUiPhase.ready);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            removed > 0
+                ? 'Compressed $removed older messages'
+                : 'Nothing to compress yet',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _phase = _ChatUiPhase.ready);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Compress failed: $e')),
+      );
+    }
   }
 
   Future<void> _clearSession() async {
@@ -164,9 +280,20 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
     await _chat.prepareSession(sessionId);
     if (!mounted) return;
     setState(() {
-      _pendingMessages.clear();
+      _draft = null;
       _isGenerating = false;
     });
+  }
+
+  List<ChatMessageModel> _visibleMessages(List<ChatMessageModel> persisted) {
+    final draft = _draft;
+    if (!_isGenerating || draft == null) return persisted;
+    final lastUser = persisted.lastIndexWhere((m) => m.isUser);
+    final head = lastUser >= 0 ? persisted.sublist(0, lastUser + 1) : persisted;
+    return [
+      ...head,
+      ...draft.buildMessages(includeEmptyAssistant: true),
+    ];
   }
 
   void _scrollToBottom() {
@@ -188,65 +315,59 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
     if (text.isEmpty) return;
 
     _inputController.clear();
-    setState(() => _isGenerating = true);
-
-    final pendingAssistant = ChatMessageModel(
-      id: 'pending-assistant',
-      sessionId: sessionId,
-      role: ChatMessageRole.assistant,
-      content: '',
-      createdAt: DateTime.now(),
-    );
-
+    final draft = ChatStreamingDraft(sessionId: sessionId);
     setState(() {
-      _pendingMessages
-        ..clear()
-        ..add(pendingAssistant);
+      _isGenerating = true;
+      _draft = draft;
+      _thinkingExpanded = true;
     });
     _scrollToBottom();
 
-    var assistantText = '';
     await _streamSub?.cancel();
     _streamSub = _chat.sendMessage(sessionId: sessionId, text: text).listen(
       (event) {
         if (!mounted) return;
         switch (event) {
-          case LlmTokenEvent(:final token):
-            assistantText += token;
-            setState(() {
-              _pendingMessages[0] = ChatMessageModel(
-                id: pendingAssistant.id,
-                sessionId: sessionId,
-                role: ChatMessageRole.assistant,
-                content: assistantText,
-                createdAt: pendingAssistant.createdAt,
-              );
-            });
+          case LlmThinkingTokenEvent(:final token):
+            draft.appendThinking(token);
+            setState(() {});
             _scrollToBottom();
-          case LlmToolCallEvent(:final name, :final argsSummary):
-            setState(() {
-              _pendingMessages.add(
-                ChatMessageModel(
-                  id: 'pending-tool-${_pendingMessages.length}',
-                  sessionId: sessionId,
-                  role: ChatMessageRole.tool,
-                  content: argsSummary,
-                  toolName: name,
-                  createdAt: DateTime.now(),
-                ),
-              );
-            });
+          case LlmThinkingDoneEvent():
+            setState(() {});
+          case LlmTokenEvent(:final token):
+            draft.appendAssistant(token);
+            setState(() {});
+            _scrollToBottom();
+          case LlmToolCallEvent(:final name, :final args, :final argsSummary):
+            draft.addToolCall(
+              name: name,
+              label: _chat.toolLabel(name),
+              argsSummary: argsSummary,
+              args: args,
+            );
+            setState(() {});
+            _scrollToBottom();
+          case LlmToolResultEvent(:final name, :final result):
+            for (final tool in draft.tools) {
+              if (tool.name == name && tool.running) {
+                tool.result = result;
+                tool.running = false;
+                break;
+              }
+            }
+            setState(() {});
           case LlmDoneEvent():
             setState(() {
-              _pendingMessages.clear();
+              _draft = null;
               _isGenerating = false;
             });
+            unawaited(_refreshContext());
           case LlmErrorEvent(:final message):
-            if (assistantText.isEmpty) {
-              assistantText = message;
-            }
+            draft.appendAssistant(
+              draft.assistantText.isEmpty ? message : draft.assistantText,
+            );
             setState(() {
-              _pendingMessages.clear();
+              _draft = null;
               _isGenerating = false;
             });
         }
@@ -254,14 +375,17 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
       onError: (Object e) {
         if (!mounted) return;
         setState(() {
-          _pendingMessages.clear();
+          _draft = null;
           _isGenerating = false;
           _error = e.toString();
         });
       },
       onDone: () {
         if (!mounted) return;
-        setState(() => _isGenerating = false);
+        setState(() {
+          _draft = null;
+          _isGenerating = false;
+        });
       },
     );
   }
@@ -272,7 +396,7 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
     if (mounted) {
       setState(() {
         _isGenerating = false;
-        _pendingMessages.clear();
+        _draft = null;
       });
     }
   }
@@ -292,7 +416,18 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
     final hubColors = HubAppColors.palette(_app, phase);
     final sessionId = _sessionId;
 
-    return LinkvaultAmbientScaffold(
+    return ChatAiGlowScope(
+      child: LinkvaultAmbientScaffold(
+      key: _scaffoldKey,
+      drawer: _phase == _ChatUiPhase.ready
+          ? ChatDrawer(
+              chat: _chat,
+              activeSessionId: sessionId,
+              onSessionSelected: _switchSession,
+              onNewChat: _newChat,
+              onDeleteSession: _deleteSession,
+            )
+          : null,
       appBar: AppBar(
         leading: const HubAppBackButton(),
         title: Column(
@@ -308,7 +443,17 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
           ],
         ),
         actions: [
-          if (_phase == _ChatUiPhase.ready)
+          if (_phase == _ChatUiPhase.ready) ...[
+            ChatContextRing(
+              usedTokens: _contextUsed,
+              maxTokens: _contextMax,
+              onTap: _compressChat,
+            ),
+            IconButton(
+              tooltip: 'Chats',
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              icon: PhosphorIcon(PhosphorIcons.sidebarSimple),
+            ),
             PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
@@ -316,21 +461,25 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
                     _openSettings();
                   case 'new':
                     _newChat();
+                  case 'compress':
+                    _compressChat();
                   case 'clear':
                     _clearSession();
                 }
               },
               itemBuilder: (context) => const [
-                PopupMenuItem(value: 'settings', child: Text('Settings')),
+                PopupMenuItem(value: 'settings', child: Text('Model settings')),
                 PopupMenuItem(value: 'new', child: Text('New chat')),
-                PopupMenuItem(value: 'clear', child: Text('Clear session')),
+                PopupMenuItem(value: 'compress', child: Text('Compress chat')),
+                PopupMenuItem(value: 'clear', child: Text('Clear messages')),
               ],
             ),
+          ],
         ],
       ),
       body: switch (_phase) {
-        _ChatUiPhase.checking || _ChatUiPhase.loading => const Center(
-            child: CircularProgressIndicator(),
+        _ChatUiPhase.checking || _ChatUiPhase.loading => Center(
+            child: _GlowingLoader(phase: phase),
           ),
         _ChatUiPhase.needsDownload => _DownloadCard(
             onDownload: _downloadModel,
@@ -344,39 +493,48 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
         _ChatUiPhase.ready when sessionId != null => Column(
             children: [
               Expanded(
-                child: StreamBuilder<List<ChatMessageModel>>(
-                  stream: _chat.repository.watchMessages(sessionId),
-                  builder: (context, snapshot) {
-                    final messages = [
-                      ...?snapshot.data,
-                      ..._pendingMessages,
-                    ];
-                    if (messages.isEmpty && !_isGenerating) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            'Ask anything — runs on-device. Tools can search the web or open links.',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        return ChatMessageTile(message: messages[index]);
+                child: Stack(
+                  children: [
+                    ChatAiEdgeAtmosphere(phase: phase),
+                    StreamBuilder<List<ChatMessageModel>>(
+                      stream: _chat.repository.watchMessages(sessionId),
+                      builder: (context, snapshot) {
+                        final messages = _visibleMessages(snapshot.data ?? []);
+                        if (messages.isEmpty && !_isGenerating) {
+                          return _ChatEmptyState(phase: phase);
+                        }
+                        return ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = messages[index];
+                            final draft = _draft;
+                            final isPendingAssistant =
+                                msg.id == 'pending-assistant' && _isGenerating;
+                            final pendingTool = draft?.toolById(msg.id);
+                            return ChatMessageTile(
+                              message: msg,
+                              pulsing: isPendingAssistant ||
+                                  (msg.isThinking && _isGenerating) ||
+                                  (pendingTool?.running ?? false),
+                              toolLabel: msg.isTool
+                                  ? _chat.toolLabel(msg.toolName ?? '')
+                                  : null,
+                              toolRunning: pendingTool?.running ?? false,
+                              thinkingExpanded: _thinkingExpanded,
+                              onThinkingToggle: msg.isThinking
+                                  ? () => setState(
+                                        () => _thinkingExpanded =
+                                            !_thinkingExpanded,
+                                      )
+                                  : null,
+                            );
+                          },
+                        );
                       },
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
               ChatInputBar(
@@ -390,6 +548,60 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
           ),
         _ => const SizedBox.shrink(),
       },
+    ),
+    );
+  }
+}
+
+class _ChatEmptyState extends StatelessWidget {
+  const _ChatEmptyState({required this.phase});
+
+  final double phase;
+
+  @override
+  Widget build(BuildContext context) {
+    final glow = ChatAiGlowColors.at(phase);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: ChatAiGlowFrame(
+          phase: phase,
+          pulsing: true,
+          intensity: 0.9,
+          borderRadius: 24,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  PhosphorIcons.sparkle,
+                  size: 36,
+                  color: glow.primary.withValues(alpha: 0.95),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'On-device AI',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: glow.secondary.withValues(alpha: 0.95),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Ask anything — inference stays local. Tools can search the web or open links.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.65),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -402,35 +614,54 @@ class _DownloadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final phase = ChatAiGlowScope.phaseOf(context);
+    final glow = ChatAiGlowColors.at(phase);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            PhosphorIcon(PhosphorIcons.robot, size: 48),
-            const SizedBox(height: 16),
-            Text(
-              'Download Gemma 4 E2B',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
+        child: ChatAiGlowFrame(
+          phase: phase,
+          pulsing: true,
+          intensity: 1,
+          borderRadius: 24,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PhosphorIcon(
+                  PhosphorIcons.robot,
+                  size: 48,
+                  color: glow.primary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Download Gemma 4 E2B',
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '~3 GB on-device model. Inference stays local; web is only used for tools.',
+                  textAlign: TextAlign.center,
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    error!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: onDownload,
+                  icon: PhosphorIcon(PhosphorIcons.downloadSimple),
+                  label: const Text('Download model'),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              '~3 GB on-device model. Inference stays local; web is only used for tools.',
-              textAlign: TextAlign.center,
-            ),
-            if (error != null) ...[
-              const SizedBox(height: 12),
-              Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            ],
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: onDownload,
-              icon: PhosphorIcon(PhosphorIcons.downloadSimple),
-              label: const Text('Download model'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -444,17 +675,59 @@ class _DownloadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final phase = ChatAiGlowScope.phaseOf(context);
+    final glow = ChatAiGlowColors.at(phase);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(value: progress > 0 ? progress / 100 : null),
-            const SizedBox(height: 16),
-            Text('Downloading… $progress%'),
-          ],
+        child: ChatAiGlowFrame(
+          phase: phase,
+          pulsing: true,
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CircularProgressIndicator(
+                    value: progress > 0 ? progress / 100 : null,
+                    color: glow.primary,
+                    backgroundColor: glow.secondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Downloading… $progress%'),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _GlowingLoader extends StatelessWidget {
+  const _GlowingLoader({required this.phase});
+
+  final double phase;
+
+  @override
+  Widget build(BuildContext context) {
+    final glow = ChatAiGlowColors.at(phase, pulse: 1);
+
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: glow.bubbleShadows(intensity: 1.1, pulse: 1),
+      ),
+      child: CircularProgressIndicator(
+        strokeWidth: 2.5,
+        color: glow.primary,
       ),
     );
   }

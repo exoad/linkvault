@@ -113,6 +113,7 @@ class LinkvaultAmbientScaffold extends StatelessWidget {
     super.key,
     this.appBar,
     required this.body,
+    this.drawer,
     this.floatingActionButton,
     this.floatingActionButtonLocation,
     this.extendBody = false,
@@ -122,6 +123,7 @@ class LinkvaultAmbientScaffold extends StatelessWidget {
 
   final PreferredSizeWidget? appBar;
   final Widget body;
+  final Widget? drawer;
   final Widget? floatingActionButton;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
   final bool extendBody;
@@ -135,6 +137,7 @@ class LinkvaultAmbientScaffold extends StatelessWidget {
       extendBody: extendBody,
       extendBodyBehindAppBar: extendBodyBehindAppBar,
       appBar: appBar,
+      drawer: drawer,
       body: body,
       floatingActionButton: floatingActionButton,
       floatingActionButtonLocation: floatingActionButtonLocation,

@@ -2,11 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import 'package:flutter_gemma/flutter_gemma.dart';
-
 import 'ai/chat/chat_hf_token_preferences.dart';
+import 'ai/chat/chat_inference_preferences.dart';
 import 'ai/chat/chat_service.dart';
-import 'ai/runtime/gemma_runtime.dart';
+import 'ai/chat/chat_session_preferences.dart';
 import 'ai/runtime/inference_backend.dart';
 import 'ai/tools/tool_registry.dart';
 import 'app.dart';
@@ -24,8 +23,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureEdgeToEdge();
   await DisplayModeService.ensureHighRefreshRate();
-  await FlutterGemma.initialize();
-
   final database = AppDatabase();
   await database.ensureUnfiled();
   final repository = BookmarkRepository(database: database);
@@ -33,12 +30,15 @@ Future<void> main() async {
   final chat = ChatRepository(database: database);
   final backendPrefs = await InferenceBackendPreferences.load();
   final hfTokenPrefs = await ChatHfTokenPreferences.load();
-  final chatService = ChatService(
+  final chatInferencePrefs = await ChatInferencePreferences.load();
+  final chatSessionPrefs = await ChatSessionPreferences.load();
+  final chatService = ChatService.android(
     repository: chat,
-    runtime: GemmaRuntime(),
     toolRegistry: ToolRegistry(),
     backendPrefs: backendPrefs,
     hfTokenPrefs: hfTokenPrefs,
+    inferencePrefs: chatInferencePrefs,
+    sessionPrefs: chatSessionPrefs,
   );
   final themeController = ThemeController();
 
