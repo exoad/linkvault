@@ -114,11 +114,18 @@ final class NativeLlmRuntime implements LocalLlmRuntime {
     _requireNative();
     _loadedBackend = backend;
     final maxOut = generationConfig?.maxOutputTokens ?? _model.maxTokens;
-    await _host.loadModel(
-      _model.modelFileName,
-      backend.toPigeon(),
-      maxOut,
-    );
+    await _host
+        .loadModel(
+          _model.modelFileName,
+          backend.toPigeon(),
+          maxOut,
+        )
+        .timeout(
+          const Duration(seconds: 120),
+          onTimeout: () => throw TimeoutException(
+            'Model load timed out after 2 minutes',
+          ),
+        );
     if (generationConfig != null) {
       await _host.applyGenerationConfig(generationConfig);
     }

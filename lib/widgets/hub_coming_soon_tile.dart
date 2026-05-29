@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../animations/linkvault_motion.dart';
 import '../hub/hub_module.dart';
 import '../theme/linkvault_design.dart';
 import '../theme/linkvault_typography.dart';

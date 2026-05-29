@@ -48,6 +48,7 @@ Future<void> main() async {
 
   runApp(
     LinkvaultApp(
+      database: database,
       repository: repository,
       notes: notes,
       chat: chat,

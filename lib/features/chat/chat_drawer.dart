@@ -63,7 +63,7 @@ class ChatDrawer extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ],
-                ),
+                ).heroEntrance(context),
               ),
               FilledButton.icon(
                 onPressed: () {
@@ -98,6 +98,7 @@ class ChatDrawer extends StatelessWidget {
                           session: session,
                           selected: selected,
                           hub: hub,
+                          listIndex: index,
                           onTap: () {
                             Navigator.pop(context);
                             onSessionSelected(session.id);
@@ -122,6 +123,7 @@ class _SessionTile extends StatelessWidget {
     required this.session,
     required this.selected,
     required this.hub,
+    required this.listIndex,
     required this.onTap,
     required this.onDelete,
   });
@@ -129,6 +131,7 @@ class _SessionTile extends StatelessWidget {
   final ChatSessionModel session;
   final bool selected;
   final HubAppPalette hub;
+  final int listIndex;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
@@ -177,7 +180,7 @@ class _SessionTile extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ).listEntrance(context, index: listIndex);
   }
 
   static String _formatWhen(DateTime time) {

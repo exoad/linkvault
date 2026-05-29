@@ -63,11 +63,20 @@ class ChatAiEdgeAtmosphere extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final active = ChatAiGlowScope.activeOf(context);
+    if (!active) {
+      return const SizedBox.shrink();
+    }
+
     final colors = ChatAiGlowColors.at(phase);
     final pulse = 0.75 + 0.25 * math.sin(phase * math.pi * 2);
 
     return IgnorePointer(
-      child: Stack(
+      child: AnimatedOpacity(
+        opacity: active ? 1 : 0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        child: Stack(
         children: [
           Positioned(
             left: -80,
@@ -96,6 +105,7 @@ class ChatAiEdgeAtmosphere extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -139,6 +149,19 @@ class ChatAiGlowFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    if (!pulsing && !ChatAiGlowScope.activeOf(context)) {
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          color: fillColor ?? scheme.surfaceContainerHigh.withValues(alpha: 0.82),
+          border: Border.all(
+            color: scheme.onSurface.withValues(alpha: 0.12),
+          ),
+        ),
+        child: child,
+      );
+    }
+
     final pulse = pulsing
         ? 0.72 + 0.28 * math.sin(phase * math.pi * 4)
         : 0.85;
@@ -173,23 +196,29 @@ class ChatAiGlowFrame extends StatelessWidget {
   }
 }
 
-/// Syncs ambient phase for chat descendants.
+/// Syncs ambient phase and AI glow activity for chat descendants.
 class ChatAiGlowScope extends StatelessWidget {
-  const ChatAiGlowScope({super.key, required this.child});
+  const ChatAiGlowScope({
+    super.key,
+    required this.active,
+    required this.child,
+  });
 
+  final bool active;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final ambient = AmbientMotionScope.maybeOf(context);
     if (ambient == null) {
-      return _ChatAiGlowInherited(phase: 0, child: child);
+      return _ChatAiGlowInherited(phase: 0, active: active, child: child);
     }
     return AnimatedBuilder(
       animation: ambient,
       builder: (context, child) {
         return _ChatAiGlowInherited(
           phase: ambient.value,
+          active: active,
           child: child!,
         );
       },
@@ -201,13 +230,24 @@ class ChatAiGlowScope extends StatelessWidget {
     final scope = context.dependOnInheritedWidgetOfExactType<_ChatAiGlowInherited>();
     return scope?.phase ?? 0;
   }
+
+  static bool activeOf(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<_ChatAiGlowInherited>();
+    return scope?.active ?? false;
+  }
 }
 
 class _ChatAiGlowInherited extends InheritedWidget {
-  const _ChatAiGlowInherited({required this.phase, required super.child});
+  const _ChatAiGlowInherited({
+    required this.phase,
+    required this.active,
+    required super.child,
+  });
 
   final double phase;
+  final bool active;
 
   @override
-  bool updateShouldNotify(_ChatAiGlowInherited oldWidget) => phase != oldWidget.phase;
+  bool updateShouldNotify(_ChatAiGlowInherited oldWidget) =>
+      phase != oldWidget.phase || active != oldWidget.active;
 }

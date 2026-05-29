@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../theme/app_motion.dart';
 import 'widgets/chat_ai_glow.dart';
 
 class ChatInputBar extends StatelessWidget {
@@ -46,13 +47,10 @@ class ChatInputBar extends StatelessWidget {
         ),
         child: Padding(
           padding: EdgeInsets.fromLTRB(12, 10, 12, 8 + bottom),
-          child: ChatAiGlowFrame(
+          child: _InputShell(
+            scheme: scheme,
             phase: phase,
-            pulsing: isGenerating,
-            intensity: isGenerating ? 1.2 : 0.7,
-            borderRadius: 24,
-            borderWidth: isGenerating ? 2 : 1.2,
-            fillColor: scheme.surfaceContainerHigh.withValues(alpha: 0.88),
+            isGenerating: isGenerating,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
               child: Row(
@@ -69,7 +67,9 @@ class ChatInputBar extends StatelessWidget {
                       decoration: InputDecoration(
                         hintText: isGenerating ? 'Thinking…' : 'Message…',
                         hintStyle: TextStyle(
-                          color: glow.primary.withValues(alpha: 0.45),
+                          color: isGenerating
+                              ? glow.primary.withValues(alpha: 0.45)
+                              : scheme.onSurface.withValues(alpha: 0.4),
                         ),
                         filled: true,
                         fillColor: scheme.surface.withValues(alpha: 0.35),
@@ -105,6 +105,48 @@ class ChatInputBar extends StatelessWidget {
   }
 }
 
+class _InputShell extends StatelessWidget {
+  const _InputShell({
+    required this.scheme,
+    required this.phase,
+    required this.isGenerating,
+    required this.child,
+  });
+
+  final ColorScheme scheme;
+  final double phase;
+  final bool isGenerating;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isGenerating) {
+      return ChatAiGlowFrame(
+        phase: phase,
+        pulsing: true,
+        intensity: 1.2,
+        borderRadius: 24,
+        borderWidth: 2,
+        fillColor: scheme.surfaceContainerHigh.withValues(alpha: 0.88),
+        child: child,
+      );
+    }
+
+    return AnimatedContainer(
+      duration: AppMotion.fast,
+      curve: AppMotion.standard,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.88),
+        border: Border.all(
+          color: scheme.onSurface.withValues(alpha: 0.12),
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
 class _SendOrb extends StatelessWidget {
   const _SendOrb({
     required this.glow,
@@ -125,15 +167,20 @@ class _SendOrb extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        boxShadow: glow.bubbleShadows(intensity: isGenerating ? 1.3 : 0.6, pulse: pulse),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            glow.primary.withValues(alpha: 0.85),
-            glow.secondary.withValues(alpha: 0.75),
-          ],
-        ),
+        boxShadow: isGenerating
+            ? glow.bubbleShadows(intensity: 1.3, pulse: pulse)
+            : null,
+        color: isGenerating ? null : scheme.surfaceContainerHigh,
+        gradient: isGenerating
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  glow.primary.withValues(alpha: 0.85),
+                  glow.secondary.withValues(alpha: 0.75),
+                ],
+              )
+            : null,
       ),
       child: IconButton(
         onPressed: onPressed,

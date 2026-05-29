@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../../theme/app_motion.dart';
 import '../../../theme/linkvault_design.dart';
 import '../../../theme/linkvault_typography.dart';
 import 'chat_ai_glow.dart';
@@ -75,18 +76,26 @@ class ChatThinkingTile extends StatelessWidget {
                   ),
                 ),
               ),
-              if (expanded && text.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  child: Text(
-                    text,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurface.withValues(alpha: 0.72),
-                      height: 1.4,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
+              AnimatedSize(
+                duration: AppMotion.fast,
+                curve: AppMotion.standard,
+                alignment: Alignment.topCenter,
+                child: expanded && text.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        child: Text(
+                          text,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: scheme.onSurface
+                                        .withValues(alpha: 0.72),
+                                    height: 1.4,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ],
           ),
         ),

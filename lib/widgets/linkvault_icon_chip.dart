@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../animations/linkvault_motion.dart';
+
 /// Shared icon container — soft rounded square with a faint tint of [color].
 ///
 /// One consistent treatment for folders, hub apps, notes, and empty states so
@@ -29,6 +31,6 @@ class LinkvaultIconChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(dimension * 0.32),
       ),
       child: child,
-    );
+    ).chipEntrance(context);
   }
 }

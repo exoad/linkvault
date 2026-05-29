@@ -14,6 +14,14 @@ import 'tool_message_payload.dart';
 
 export '../runtime/local_llm_runtime.dart' show LlmStreamEvent, LlmTokenEvent;
 
+/// Steps reported while [ChatService.prepareSession] runs.
+enum ChatPrepareStep {
+  loadingModel,
+  resetting,
+  replayingHistory,
+  done,
+}
+
 /// Orchestrates native Kotlin inference, Drift history, and tools.
 final class ChatService {
   ChatService({
@@ -124,8 +132,13 @@ final class ChatService {
     }
   }
 
-  Future<void> prepareSession(String sessionId) async {
+  Future<void> prepareSession(
+    String sessionId, {
+    void Function(ChatPrepareStep step)? onProgress,
+  }) async {
+    onProgress?.call(ChatPrepareStep.loadingModel);
     await ensureModelReady();
+    onProgress?.call(ChatPrepareStep.resetting);
     await runtime.resetChat();
     final rows = await repository.getMessages(sessionId);
     final history = rows
@@ -147,8 +160,10 @@ final class ChatService {
           ),
         )
         .toList();
+    onProgress?.call(ChatPrepareStep.replayingHistory);
     await runtime.replayHistory(history);
     await rememberSession(sessionId);
+    onProgress?.call(ChatPrepareStep.done);
   }
 
   Future<int> compressSession(String sessionId, {int keepRecent = 8}) async {
@@ -174,6 +189,8 @@ final class ChatService {
       role: ChatMessageRole.user,
       content: trimmed,
     );
+
+    await ensureModelReady();
 
     final stream = runtime.sendUserMessageWithToolHandler(
       text: trimmed,

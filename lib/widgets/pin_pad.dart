@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../animations/interaction_motion.dart';
 import '../services/pin_service.dart';
 import '../theme/app_motion.dart';
 
@@ -118,25 +119,27 @@ class _PinKey extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: onTap == null
-          ? Colors.transparent
-          : Theme.of(context).colorScheme.surfaceContainerHigh,
+    final child = SizedBox(
+      height: 52,
+      child: Center(
+        child: icon != null
+            ? PhosphorIcon(icon!, size: 22)
+            : Text(
+                label ?? '',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+      ),
+    );
+
+    if (onTap == null) return child;
+
+    return AlivePressable(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 52,
-          child: Center(
-            child: icon != null
-                ? PhosphorIcon(icon!, size: 22)
-                : Text(
-                    label ?? '',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-          ),
-        ),
+        child: child,
       ),
     );
   }

@@ -74,6 +74,29 @@ void main() {
     expect(messages.any((m) => m.role == ChatMessageRole.assistant), isTrue);
   });
 
+  test('prepareSession reports progress steps', () async {
+    final host = FakeLlmHostGateway();
+    final service = testService(host);
+    final sessionId = await service.createSession();
+    final steps = <ChatPrepareStep>[];
+    await service.prepareSession(sessionId, onProgress: steps.add);
+    expect(steps.first, ChatPrepareStep.loadingModel);
+    expect(steps.last, ChatPrepareStep.done);
+  });
+
+  test('createSession then prepareSession loads runtime backend', () async {
+    final host = FakeLlmHostGateway();
+    final service = testService(host);
+
+    final sessionId = await service.createSession();
+    expect(service.activeBackend, isNull);
+
+    await service.prepareSession(sessionId);
+
+    expect(service.activeBackend, isNotNull);
+    expect(host.lastLoadedBackend, isNotNull);
+  });
+
   test('sendMessage streams assistant reply without tools', () async {
     final host = FakeLlmHostGateway();
     host.nextGeneration = TokenStreamPlan(

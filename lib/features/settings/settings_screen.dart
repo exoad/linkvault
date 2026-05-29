@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../ui/linkvault_ui.dart';
-import 'appearance_section.dart';
+import 'data_section.dart';
 import 'update_section.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -26,7 +26,7 @@ class SettingsScreen extends StatelessWidget {
         children: [
           const UpdateSection().listEntrance(context, index: 0),
           const SizedBox(height: 24),
-          const AppearanceSection().listEntrance(context, index: 1),
+          const DataSection().listEntrance(context, index: 1),
         ],
       ),
     );

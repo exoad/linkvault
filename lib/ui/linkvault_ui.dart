@@ -4,6 +4,7 @@ library;
 export '../animations/animated_sheet.dart';
 export '../animations/app_page_route.dart';
 export '../animations/interaction_motion.dart';
+export '../animations/linkvault_motion.dart';
 export '../animations/list_entrance.dart';
 export '../hub/hub_module.dart';
 export '../theme/app_motion.dart';

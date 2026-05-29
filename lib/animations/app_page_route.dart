@@ -7,34 +7,19 @@ class AppPageRoute<T> extends PageRouteBuilder<T> {
   AppPageRoute({required this.child})
       : super(
           opaque: true,
-          pageBuilder: (context, animation, secondaryAnimation) => child,
-          transitionDuration: AppMotion.slow,
-          reverseTransitionDuration: AppMotion.normal,
+          pageBuilder: (context, animation, secondaryAnimation) {
+            final surface = Theme.of(context).colorScheme.surface;
+            return ColoredBox(color: surface, child: child);
+          },
+          transitionDuration: AppMotion.fast,
+          reverseTransitionDuration: AppMotion.fast,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final curved = CurvedAnimation(
-              parent: animation,
-              curve: AppMotion.emphasized,
-              reverseCurve: AppMotion.emphasized,
-            );
-            final offsetTween = Tween<Offset>(
-              begin: const Offset(0.08, 0),
-              end: Offset.zero,
-            );
-            final secondaryOffset = Tween<Offset>(
-              begin: Offset.zero,
-              end: const Offset(-0.04, 0),
-            );
-            return SlideTransition(
-              position: offsetTween.animate(curved),
-              child: SlideTransition(
-                position: secondaryOffset.animate(
-                  CurvedAnimation(
-                    parent: secondaryAnimation,
-                    curve: AppMotion.standard,
-                  ),
-                ),
-                child: child,
+            return FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: AppMotion.standard,
               ),
+              child: child,
             );
           },
         );

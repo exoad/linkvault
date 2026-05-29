@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../animations/linkvault_motion.dart';
 import '../../models/chat_message.dart';
 import '../../theme/linkvault_design.dart';
 import 'widgets/chat_ai_glow.dart';
@@ -10,6 +11,7 @@ class ChatMessageTile extends StatelessWidget {
   const ChatMessageTile({
     super.key,
     required this.message,
+    this.listIndex = 0,
     this.pulsing = false,
     this.toolLabel,
     this.toolRunning = false,
@@ -18,6 +20,7 @@ class ChatMessageTile extends StatelessWidget {
   });
 
   final ChatMessageModel message;
+  final int listIndex;
   final bool pulsing;
   final String? toolLabel;
   final bool toolRunning;
@@ -32,7 +35,7 @@ class ChatMessageTile extends StatelessWidget {
         expanded: thinkingExpanded,
         streaming: pulsing,
         onToggle: onThinkingToggle ?? () {},
-      );
+      ).messageEntrance(context, index: listIndex);
     }
 
     if (message.isTool) {
@@ -41,7 +44,7 @@ class ChatMessageTile extends StatelessWidget {
         label: toolLabel ?? message.toolName ?? 'Tool',
         content: message.content,
         running: toolRunning,
-      );
+      ).messageEntrance(context, index: listIndex);
     }
 
     final scheme = Theme.of(context).colorScheme;
@@ -59,7 +62,7 @@ class ChatMessageTile extends StatelessWidget {
       ),
     );
 
-    return Align(
+    final bubble = Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
@@ -80,13 +83,26 @@ class ChatMessageTile extends StatelessWidget {
                 ),
                 child: content,
               )
-            : ChatAiGlowFrame(
-                phase: phase,
-                pulsing: pulsing,
-                intensity: pulsing ? 1.15 : 0.95,
-                child: content,
-              ),
+            : pulsing
+                ? ChatAiGlowFrame(
+                    phase: phase,
+                    pulsing: true,
+                    intensity: 1.15,
+                    child: content,
+                  )
+                : DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: LinkvaultDesign.radiusCard,
+                      color: scheme.onSurface.withValues(alpha: 0.06),
+                      border: Border.all(
+                        color: scheme.onSurface.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: content,
+                  ),
       ),
     );
+
+    return bubble.messageEntrance(context, index: listIndex);
   }
 }

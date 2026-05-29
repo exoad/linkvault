@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'app_scope.dart';
 import 'ai/chat/chat_service.dart';
+import 'data/app_database.dart';
 import 'data/bookmark_repository.dart';
 import 'data/chat_repository.dart';
 import 'data/note_repository.dart';
@@ -16,6 +17,7 @@ import 'widgets/linkvault_ambient_background.dart';
 class LinkvaultApp extends StatelessWidget {
   const LinkvaultApp({
     super.key,
+    required this.database,
     required this.repository,
     required this.notes,
     required this.chat,
@@ -24,6 +26,7 @@ class LinkvaultApp extends StatelessWidget {
     this.navigatorKey,
   });
 
+  final AppDatabase database;
   final BookmarkRepository repository;
   final NoteRepository notes;
   final ChatRepository chat;
@@ -39,6 +42,7 @@ class LinkvaultApp extends StatelessWidget {
     );
 
     return AppScope(
+      database: database,
       repository: repository,
       notes: notes,
       chat: chat,

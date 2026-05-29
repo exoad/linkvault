@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-import '../animations/interaction_motion.dart';
+import '../animations/linkvault_motion.dart';
 import '../models/layout_mode.dart';
 import '../theme/app_motion.dart';
 
@@ -38,6 +38,6 @@ class LayoutModeToggle extends StatelessWidget {
           isList ? PhosphorIcons.squaresFour : PhosphorIcons.list,
         ),
       ),
-    );
+    ).toggleEntrance(context);
   }
 }

@@ -13,10 +13,12 @@ import '../../widgets/linkvault_animated_ambient.dart';
 import 'chat_drawer.dart';
 import 'chat_input_bar.dart';
 import 'chat_message_tile.dart';
+import 'chat_runtime_status.dart';
 import 'chat_settings_sheet.dart';
 import 'chat_streaming_draft.dart';
 import 'widgets/chat_ai_glow.dart';
 import 'widgets/chat_context_ring.dart';
+import 'widgets/chat_status_bar.dart';
 
 enum _ChatUiPhase { checking, needsDownload, downloading, loading, ready, error }
 
@@ -44,9 +46,51 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   int _contextUsed = 0;
   int _contextMax = 8192;
   Timer? _contextTimer;
+  Timer? _firstTokenTimer;
+  ChatPrepareStep? _prepareStep;
+  String? _statusError;
+  bool _streamReceivedEvent = false;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   ChatService get _chat => AppScope.chatServiceOf(context);
+
+  ChatUiPhase get _mappedPhase => switch (_phase) {
+        _ChatUiPhase.checking => ChatUiPhase.checking,
+        _ChatUiPhase.needsDownload => ChatUiPhase.needsDownload,
+        _ChatUiPhase.downloading => ChatUiPhase.downloading,
+        _ChatUiPhase.loading => ChatUiPhase.loading,
+        _ChatUiPhase.ready => ChatUiPhase.ready,
+        _ChatUiPhase.error => ChatUiPhase.error,
+      };
+
+  ChatRuntimeStatus get _runtimeStatus => ChatRuntimeStatusMapper.resolve(
+        phase: _mappedPhase,
+        modelLoaded: _chat.activeBackend != null,
+        isGenerating: _isGenerating,
+        draft: _draft,
+        prepareStep: _prepareStep,
+        downloadProgress: _downloadProgress,
+        backendLabel: _backendLabel,
+        errorMessage: _statusError ?? _error,
+        streamReceivedEvent: _streamReceivedEvent,
+      );
+
+  String? get _activeToolLabel {
+    final draft = _draft;
+    if (draft == null) return null;
+    for (final tool in draft.tools) {
+      if (tool.running) return tool.label;
+    }
+    return null;
+  }
+
+  String get _statusLabel => ChatRuntimeStatusMapper.label(
+        _runtimeStatus,
+        downloadProgress: _downloadProgress,
+        backendLabel: _backendLabel,
+        errorMessage: _statusError ?? _error,
+        toolLabel: _activeToolLabel,
+      );
 
   @override
   void initState() {
@@ -62,6 +106,7 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   @override
   void dispose() {
     _contextTimer?.cancel();
+    _firstTokenTimer?.cancel();
     _streamSub?.cancel();
     _inputController.dispose();
     _scrollController.dispose();
@@ -129,18 +174,41 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   }
 
   Future<void> _openReadySession({String? sessionId}) async {
-    setState(() => _phase = _ChatUiPhase.loading);
+    setState(() {
+      _phase = _ChatUiPhase.loading;
+      _prepareStep = ChatPrepareStep.loadingModel;
+      _statusError = null;
+    });
 
     try {
       var id = sessionId ?? _sessionId ?? await _chat.savedSessionId;
+      var prepared = false;
       if (id != null) {
         try {
-          await _chat.prepareSession(id);
-        } catch (_) {
+          await _chat.prepareSession(
+            id,
+            onProgress: (step) {
+              if (mounted) setState(() => _prepareStep = step);
+            },
+          );
+          prepared = true;
+        } catch (e) {
+          _statusError = 'Could not restore chat: $e';
           id = null;
         }
       }
       id ??= await _chat.createSession();
+      if (!prepared) {
+        await _chat.prepareSession(
+          id,
+          onProgress: (step) {
+            if (mounted) setState(() => _prepareStep = step);
+          },
+        );
+      }
+      if (_chat.activeBackend == null) {
+        throw StateError('Model failed to load into memory');
+      }
       await _refreshContext();
       if (!mounted) return;
       setState(() {
@@ -148,12 +216,15 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
         _phase = _ChatUiPhase.ready;
         _backendLabel = _chat.backendStatusLabel;
         _draft = null;
+        _prepareStep = null;
+        _statusError = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _phase = _ChatUiPhase.error;
         _error = e.toString();
+        _prepareStep = null;
       });
     }
   }
@@ -206,7 +277,10 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
       confirmLabel: 'Compress',
     );
     if (confirmed != true || !mounted) return;
-    setState(() => _phase = _ChatUiPhase.loading);
+    setState(() {
+      _phase = _ChatUiPhase.loading;
+      _prepareStep = ChatPrepareStep.loadingModel;
+    });
     try {
       final removed = await _chat.compressSession(sessionId);
       await _refreshContext();
@@ -250,6 +324,26 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
     });
   }
 
+  void _cancelFirstTokenTimer() {
+    _firstTokenTimer?.cancel();
+    _firstTokenTimer = null;
+  }
+
+  void _startFirstTokenTimer() {
+    _cancelFirstTokenTimer();
+    _firstTokenTimer = Timer(const Duration(seconds: 45), () async {
+      if (!mounted || !_isGenerating || _streamReceivedEvent) return;
+      await _chat.stopGeneration();
+      await _streamSub?.cancel();
+      if (!mounted) return;
+      setState(() {
+        _isGenerating = false;
+        _draft = null;
+        _statusError = 'No response from model (timed out)';
+      });
+    });
+  }
+
   List<ChatMessageModel> _visibleMessages(List<ChatMessageModel> persisted) {
     final draft = _draft;
     if (!_isGenerating || draft == null) return persisted;
@@ -285,13 +379,32 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
       _isGenerating = true;
       _draft = draft;
       _thinkingExpanded = true;
+      _statusError = null;
+      _streamReceivedEvent = false;
     });
     _scrollToBottom();
+    _startFirstTokenTimer();
 
     await _streamSub?.cancel();
-    _streamSub = _chat.sendMessage(sessionId: sessionId, text: text).listen(
+    Stream<LlmStreamEvent> stream;
+    try {
+      stream = _chat.sendMessage(sessionId: sessionId, text: text);
+    } catch (e) {
+      _cancelFirstTokenTimer();
+      if (!mounted) return;
+      setState(() {
+        _isGenerating = false;
+        _draft = null;
+        _statusError = e.toString();
+      });
+      return;
+    }
+
+    var streamCompleted = false;
+    _streamSub = stream.listen(
       (event) {
         if (!mounted) return;
+        _streamReceivedEvent = true;
         switch (event) {
           case LlmThinkingTokenEvent(:final token):
             draft.appendThinking(token);
@@ -322,47 +435,80 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
             }
             setState(() {});
           case LlmDoneEvent():
+            streamCompleted = true;
+            _cancelFirstTokenTimer();
             setState(() {
               _draft = null;
               _isGenerating = false;
+              _statusError = null;
             });
             unawaited(_refreshContext());
           case LlmErrorEvent(:final message):
+            streamCompleted = true;
+            _cancelFirstTokenTimer();
             draft.appendAssistant(
               draft.assistantText.isEmpty ? message : draft.assistantText,
             );
             setState(() {
               _draft = null;
               _isGenerating = false;
+              _statusError = message;
             });
         }
       },
       onError: (Object e) {
+        _cancelFirstTokenTimer();
         if (!mounted) return;
         setState(() {
           _draft = null;
           _isGenerating = false;
-          _error = e.toString();
+          _statusError = e.toString();
         });
       },
       onDone: () {
+        _cancelFirstTokenTimer();
         if (!mounted) return;
-        setState(() {
-          _draft = null;
-          _isGenerating = false;
-        });
+        if (!streamCompleted && !_streamReceivedEvent) {
+          setState(() {
+            _draft = null;
+            _isGenerating = false;
+            _statusError = 'No response from model';
+          });
+          return;
+        }
+        if (!streamCompleted) {
+          setState(() {
+            _draft = null;
+            _isGenerating = false;
+            _statusError ??= 'Response ended unexpectedly';
+          });
+        }
       },
     );
   }
 
   Future<void> _stop() async {
+    _cancelFirstTokenTimer();
     await _chat.stopGeneration();
     await _streamSub?.cancel();
     if (mounted) {
       setState(() {
         _isGenerating = false;
         _draft = null;
+        _statusError = null;
       });
+    }
+  }
+
+  void _onStatusRetry() {
+    if (_runtimeStatus == ChatRuntimeStatus.notLoaded ||
+        _chat.activeBackend == null) {
+      unawaited(_bootstrap());
+      return;
+    }
+    if (_runtimeStatus == ChatRuntimeStatus.error) {
+      setState(() => _statusError = null);
+      unawaited(_bootstrap());
     }
   }
 
@@ -379,7 +525,11 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
     final hubColors = HubAppColors.palette(_app, phase);
     final sessionId = _sessionId;
 
+    final glowActive =
+        _isGenerating || _phase == _ChatUiPhase.loading;
+
     return ChatAiGlowScope(
+      active: glowActive,
       child: LinkvaultAmbientScaffold(
       key: _scaffoldKey,
       drawer: _phase == _ChatUiPhase.ready
@@ -440,9 +590,22 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
           ],
         ],
       ),
-      body: switch (_phase) {
-        _ChatUiPhase.checking || _ChatUiPhase.loading => LinkvaultHubLoader(
+      body: AnimatedSwitcher(
+        duration: AppMotion.fast,
+        switchInCurve: AppMotion.decelerate,
+        switchOutCurve: AppMotion.standard,
+        child: KeyedSubtree(
+          key: ValueKey(_phase),
+          child: switch (_phase) {
+        _ChatUiPhase.checking => LinkvaultHubLoader(
             app: _app,
+            message: 'Checking model…',
+            subtitle: 'Looking for the on-device Gemma model',
+          ),
+        _ChatUiPhase.loading => LinkvaultHubLoader(
+            app: _app,
+            message: 'Loading on-device model…',
+            subtitle: 'First load can take a minute',
           ),
         _ChatUiPhase.needsDownload => LinkvaultHubPanel(
             app: _app,
@@ -486,7 +649,13 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
               child: const Text('Retry'),
             ),
           ),
-        _ChatUiPhase.ready when sessionId != null => Column(
+        _ChatUiPhase.ready when sessionId != null => AnimatedPadding(
+            duration: AppMotion.fast,
+            curve: AppMotion.standard,
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: Column(
             children: [
               Expanded(
                 child: Stack(
@@ -518,6 +687,7 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
                             final pendingTool = draft?.toolById(msg.id);
                             return ChatMessageTile(
                               message: msg,
+                              listIndex: index,
                               pulsing: isPendingAssistant ||
                                   (msg.isThinking && _isGenerating) ||
                                   (pendingTool?.running ?? false),
@@ -545,12 +715,22 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
                 onSend: _send,
                 onStop: _stop,
                 isGenerating: _isGenerating,
-                enabled: true,
+                enabled: _chat.activeBackend != null,
+              ),
+              ChatStatusBar(
+                status: _runtimeStatus,
+                label: _statusLabel,
+                onRetry: ChatRuntimeStatusMapper.isRetryable(_runtimeStatus)
+                    ? _onStatusRetry
+                    : null,
               ),
             ],
           ),
+          ),
         _ => const SizedBox.shrink(),
       },
+        ),
+      ),
     ),
     );
   }

@@ -4,6 +4,9 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import '../hub/hub_module.dart';
 import '../theme/hub_app_colors.dart';
 import '../theme/linkvault_design.dart';
+import '../theme/linkvault_typography.dart';
+import '../animations/linkvault_motion.dart';
+import '../animations/list_entrance.dart';
 import '../widgets/linkvault_animated_ambient.dart';
 import '../widgets/linkvault_icon_chip.dart';
 import '../widgets/linkvault_surface.dart';
@@ -47,14 +50,13 @@ class LinkvaultHubPanel extends StatelessWidget {
             horizontal: LinkvaultDesign.spaceXl,
             vertical: LinkvaultDesign.space2xl,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: StaggeredEmptyState(
             children: [
               LinkvaultIconChip(
                 dimension: 56,
                 color: hub.primary,
                 child: PhosphorIcon(icon, color: hub.primary, size: 28),
-              ),
+              ).aliveBreathe(context),
               SizedBox(height: LinkvaultDesign.spaceLg),
               Text(
                 title,
@@ -100,22 +102,56 @@ class LinkvaultHubPanel extends StatelessWidget {
 
 /// Small circular loader tinted with hub accent.
 class LinkvaultHubLoader extends StatelessWidget {
-  const LinkvaultHubLoader({super.key, required this.app});
+  const LinkvaultHubLoader({
+    super.key,
+    required this.app,
+    this.message,
+    this.subtitle,
+  });
 
   final HubAppDefinition app;
+  final String? message;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
     final phase = AmbientMotionScope.maybeOf(context)?.value ?? 0.0;
     final hub = HubAppColors.palette(app, phase);
+    final scheme = Theme.of(context).colorScheme;
 
     return Center(
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: CircularProgressIndicator(
-          strokeWidth: 2.5,
-          color: hub.primary,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: LinkvaultDesign.spaceXl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: hub.primary,
+              ),
+            ),
+            if (message != null) ...[
+              const SizedBox(height: LinkvaultDesign.spaceLg),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+            if (subtitle != null) ...[
+              const SizedBox(height: LinkvaultDesign.spaceSm),
+              Text(
+                subtitle!,
+                textAlign: TextAlign.center,
+                style: LinkvaultTypography.meta(scheme),
+              ),
+            ],
+          ],
         ),
       ),
     );

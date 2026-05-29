@@ -76,33 +76,30 @@ class _AppShellState extends State<AppShell> {
         ? const HubScreen()
         : _screenFor(_moduleId!);
 
+    final surface = Theme.of(context).colorScheme.surface;
+
     return AppShellScope(
       activeModuleId: _moduleId,
       openModule: _openModule,
       closeModule: _closeModule,
       child: AnimatedSwitcher(
-        duration: AppMotion.normal,
-        switchInCurve: AppMotion.emphasized,
+        duration: AppMotion.fast,
+        switchInCurve: AppMotion.decelerate,
         switchOutCurve: AppMotion.standard,
         transitionBuilder: (child, animation) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: AppMotion.emphasized,
-          );
           return FadeTransition(
-            opacity: curved,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0.06, 0),
-                end: Offset.zero,
-              ).animate(curved),
-              child: child,
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: AppMotion.standard,
             ),
+            child: child,
           );
         },
         child: KeyedSubtree(
           key: ValueKey<String?>(_moduleId),
-          child: content,
+          child: _moduleId == null
+              ? content
+              : ColoredBox(color: surface, child: content),
         ),
       ),
     );
