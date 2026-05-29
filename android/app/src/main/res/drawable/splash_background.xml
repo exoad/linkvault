@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/linkvault_surface" />
+        </shape>
+    </item>
+    <item
+        android:gravity="center"
+        android:width="120dp"
+        android:height="120dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="72dp"
+                android:centerColor="@color/linkvault_ambient_glow"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+</layer-list>

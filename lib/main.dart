@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'data/app_database.dart';
 import 'data/bookmark_repository.dart';
 import 'data/note_repository.dart';
+import 'platform/app_api.g.dart';
 import 'services/display_mode_service.dart';
 import 'services/intent_router.dart';
 import 'theme/system_ui.dart';
@@ -19,7 +22,6 @@ Future<void> main() async {
   final repository = BookmarkRepository(database: database);
   final notes = NoteRepository(database: database);
   final themeController = ThemeController();
-  await themeController.load();
 
   final navigatorKey = GlobalKey<NavigatorState>();
   final intentRouter = IntentRouter(navigatorKey: navigatorKey);
@@ -34,7 +36,14 @@ Future<void> main() async {
     ),
   );
 
-  WidgetsBinding.instance.addPostFrameCallback(
-    (_) => intentRouter.handleInitialIntent(),
-  );
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (Platform.isAndroid) {
+      try {
+        UiHostApi().notifyUiReady();
+      } catch (_) {
+        // Host API unavailable outside Android embedding.
+      }
+    }
+    intentRouter.handleInitialIntent();
+  });
 }

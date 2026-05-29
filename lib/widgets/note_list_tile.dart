@@ -4,7 +4,6 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import '../hub/hub_module.dart';
 import '../models/note.dart';
 import '../theme/hub_app_colors.dart' show HubAppColors, HubAppPalette;
-import '../theme/linkvault_accent.dart';
 import 'linkvault_animated_ambient.dart';
 import 'linkvault_icon_chip.dart';
 import 'linkvault_surface.dart';
@@ -26,11 +25,10 @@ class NoteListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final accent = Theme.of(context).extension<LinkvaultAccent>();
     final phase = AmbientMotionScope.maybeOf(context);
 
-    final palette = accent != null && phase != null
-        ? HubAppColors.palette(accent, app, phase.value + note.id.hashCode * 0.001)
+    final palette = phase != null
+        ? HubAppColors.palette(app, phase.value + note.id.hashCode * 0.001)
         : HubAppPalette(
             primary: app.seedPrimary,
             secondary: app.seedSecondary,

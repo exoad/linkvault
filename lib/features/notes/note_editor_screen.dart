@@ -4,9 +4,7 @@ import '../../data/note_repository.dart';
 import '../../hub/modules/notes_hub_module.dart';
 import '../../models/note.dart';
 import '../../theme/hub_app_colors.dart';
-import '../../theme/linkvault_accent.dart';
 import '../../widgets/linkvault_animated_ambient.dart';
-import '../../widgets/linkvault_ambient_background.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   const NoteEditorScreen({super.key, this.note, this.initialBody});
@@ -95,10 +93,9 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).extension<LinkvaultAccent>();
     final phase = AmbientMotionScope.maybeOf(context);
-    final appColor = accent != null && phase != null
-        ? HubAppColors.palette(accent, _app, phase.value).primary
+    final appColor = phase != null
+        ? HubAppColors.palette(_app, phase.value).primary
         : _app.seedPrimary;
 
     return PopScope(
@@ -107,8 +104,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         if (didPop) return;
         await _handleBack();
       },
-      child: LinkvaultAmbientBackground(
-        child: Scaffold(
+      child: Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             leading: BackButton(onPressed: _handleBack),
@@ -169,7 +165,6 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
               ),
             ],
           ),
-        ),
       ),
     );
   }

@@ -5,22 +5,25 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-/// Faint static film grain overlay for a filmic, "tech" texture.
+/// Faint static film grain overlay for a filmic texture.
 ///
-/// Generates one small noise tile and repeats it across the screen at very low
-/// opacity. Static (no per-frame work) and pointer-transparent.
+/// Uses a small noise tile scaled down so grains read fine, not chunky.
 class FilmGrain extends StatefulWidget {
   const FilmGrain({
     super.key,
-    this.opacity = 0.05,
-    this.tileSize = 160,
+    this.opacity = 0.032,
+    this.tileSize = 48,
+    this.shaderScale = 0.5,
   });
 
   /// Overall strength of the grain (0–1).
   final double opacity;
 
-  /// Pixel size of the repeating noise tile.
+  /// Pixel size of the generated noise tile.
   final int tileSize;
+
+  /// Scale applied to the repeating shader (< 1 = finer apparent grain).
+  final double shaderScale;
 
   @override
   State<FilmGrain> createState() => _FilmGrainState();
@@ -78,7 +81,11 @@ class _FilmGrainState extends State<FilmGrain> {
     return IgnorePointer(
       child: RepaintBoundary(
         child: CustomPaint(
-          painter: _GrainPainter(noise: noise, opacity: widget.opacity),
+          painter: _GrainPainter(
+            noise: noise,
+            opacity: widget.opacity,
+            shaderScale: widget.shaderScale,
+          ),
           size: Size.infinite,
         ),
       ),
@@ -87,19 +94,25 @@ class _FilmGrainState extends State<FilmGrain> {
 }
 
 class _GrainPainter extends CustomPainter {
-  _GrainPainter({required this.noise, required this.opacity});
+  _GrainPainter({
+    required this.noise,
+    required this.opacity,
+    required this.shaderScale,
+  });
 
   final ui.Image noise;
   final double opacity;
+  final double shaderScale;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final matrix = Matrix4.diagonal3Values(shaderScale, shaderScale, 1);
     final paint = Paint()
       ..shader = ui.ImageShader(
         noise,
         TileMode.repeated,
         TileMode.repeated,
-        Matrix4.identity().storage,
+        matrix.storage,
       )
       ..colorFilter = ColorFilter.mode(
         Color.fromARGB((opacity * 255).round(), 255, 255, 255),
@@ -110,5 +123,7 @@ class _GrainPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GrainPainter oldDelegate) =>
-      oldDelegate.noise != noise || oldDelegate.opacity != opacity;
+      oldDelegate.noise != noise ||
+      oldDelegate.opacity != opacity ||
+      oldDelegate.shaderScale != shaderScale;
 }

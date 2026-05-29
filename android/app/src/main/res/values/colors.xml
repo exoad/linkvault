@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#6750A4</color>
+    <color name="ic_launcher_background">#000000</color>
+    <!-- Matches Flutter [LinkvaultMonochrome] dark surface. -->
+    <color name="linkvault_surface">#FF000000</color>
+    <color name="linkvault_surface_bright">#FF1A1A1A</color>
+    <color name="linkvault_ambient_glow">#1A4DA8FF</color>
 </resources>

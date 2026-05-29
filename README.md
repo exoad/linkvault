@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/branding/app_icon_foreground.png" alt="" width="88" height="88" />
+<img src="assets/branding/app_icon.png" alt="" width="88" height="88" />
 
 # linkvault
 
@@ -32,8 +32,8 @@ Not a public product — built for personal use. Source is public under [GPL-3.0
 | **Launcher shortcuts** | Long-press the app icon for **Paste link** / **New note** |
 | **Paste to save** | Add links from clipboard with metadata fetch |
 | **Folder PIN** | Optional 4-digit lock per folder |
-| **Expressive UI** | Large type, ambient gradients (background only), list/grid layouts |
-| **Material 3** | System / light / dark, dynamic color on Android 12+ |
+| **Expressive UI** | Large type, auto-cycling lava-lamp ambient (background only), list/grid layouts |
+| **Material 3** | Dark-only monochrome UI with auto-cycling ambient glow |
 | **On-demand updates** | **Settings → Check for updates** (same signing key on every GitHub release) |
 
 ## Quick start

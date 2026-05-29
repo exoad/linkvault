@@ -19,11 +19,17 @@ class AnimatedFolderCard extends StatelessWidget {
       curve: AppMotion.standard,
       alignment: Alignment.topCenter,
       child: AnimatedOpacity(
-        duration: AppMotion.fast,
+        duration: AppMotion.normal,
+        curve: AppMotion.standard,
         opacity: isRemoving ? 0 : 1,
-        child: isRemoving
-            ? const SizedBox(width: double.infinity, height: 0)
-            : child,
+        child: AnimatedScale(
+          scale: isRemoving ? 0.96 : 1,
+          duration: AppMotion.normal,
+          curve: AppMotion.standard,
+          child: isRemoving
+              ? const SizedBox(width: double.infinity, height: 0)
+              : child,
+        ),
       ),
     );
   }

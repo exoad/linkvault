@@ -355,6 +355,40 @@ class InstallHostApi {
   }
 }
 
+/// Native shell hooks (splash handoff, window polish).
+class UiHostApi {
+  /// Constructor for [UiHostApi].  The [binaryMessenger] named argument is
+  /// available for dependency injection.  If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  UiHostApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
+      : pigeonVar_binaryMessenger = binaryMessenger,
+        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  /// Called after the first Flutter frame so Android can dismiss the splash.
+  Future<void> notifyUiReady() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.linkvault.UiHostApi.notifyUiReady$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
+}
+
 /// External intent entry point that Flutter pulls from on startup (Kotlin).
 class IntentHostApi {
   /// Constructor for [IntentHostApi].  The [binaryMessenger] named argument is

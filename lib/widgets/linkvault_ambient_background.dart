@@ -5,9 +5,10 @@ import '../theme/linkvault_gradients.dart';
 import 'film_grain.dart';
 import 'linkvault_animated_ambient.dart';
 
-/// Scaffold body with solid surface base and slowly animated ambient glow.
-class LinkvaultAmbientBackground extends StatelessWidget {
-  const LinkvaultAmbientBackground({
+/// App-wide ambient backdrop (surface, lava glow, grain). Lives above the
+/// navigator so route changes do not restart motion or repaint a new stack.
+class AmbientShell extends StatefulWidget {
+  const AmbientShell({
     super.key,
     required this.child,
     this.intensity = LinkvaultGradients.ambientIntensity,
@@ -17,48 +18,10 @@ class LinkvaultAmbientBackground extends StatelessWidget {
   final double intensity;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ColoredBox(color: scheme.surface),
-        LinkvaultAnimatedAmbient(intensity: intensity),
-        child,
-        const FilmGrain(),
-      ],
-    );
-  }
+  State<AmbientShell> createState() => _AmbientShellState();
 }
 
-/// Scaffold with shared ambient motion (background + FAB glow stay in sync).
-class LinkvaultAmbientScaffold extends StatefulWidget {
-  const LinkvaultAmbientScaffold({
-    super.key,
-    this.appBar,
-    required this.body,
-    this.floatingActionButton,
-    this.floatingActionButtonLocation,
-    this.extendBody = false,
-    this.extendBodyBehindAppBar = false,
-    this.ambientIntensity = LinkvaultGradients.ambientIntensity,
-  });
-
-  final PreferredSizeWidget? appBar;
-  final Widget body;
-  final Widget? floatingActionButton;
-  final FloatingActionButtonLocation? floatingActionButtonLocation;
-  final bool extendBody;
-  final bool extendBodyBehindAppBar;
-  final double ambientIntensity;
-
-  @override
-  State<LinkvaultAmbientScaffold> createState() =>
-      _LinkvaultAmbientScaffoldState();
-}
-
-class _LinkvaultAmbientScaffoldState extends State<LinkvaultAmbientScaffold>
+class _AmbientShellState extends State<AmbientShell>
     with SingleTickerProviderStateMixin {
   AnimationController? _phase;
 
@@ -96,33 +59,85 @@ class _LinkvaultAmbientScaffoldState extends State<LinkvaultAmbientScaffold>
     final scheme = Theme.of(context).colorScheme;
     final phase = _phase;
 
-    Widget scaffold = Scaffold(
-      extendBody: widget.extendBody,
-      extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
-      appBar: widget.appBar,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          ColoredBox(color: scheme.surface),
-          if (phase != null)
-            LinkvaultAnimatedAmbient(
-              intensity: widget.ambientIntensity,
-              phase: phase,
-            )
-          else
-            LinkvaultAnimatedAmbient(intensity: widget.ambientIntensity),
-          widget.body,
-          const FilmGrain(),
-        ],
-      ),
-      floatingActionButton: widget.floatingActionButton,
-      floatingActionButtonLocation: widget.floatingActionButtonLocation,
+    Widget backdrop = Stack(
+      fit: StackFit.expand,
+      children: [
+        ColoredBox(color: scheme.surface),
+        if (phase != null)
+          LinkvaultAnimatedAmbient(
+            intensity: widget.intensity,
+            phase: phase,
+          )
+        else
+          LinkvaultAnimatedAmbient(intensity: widget.intensity),
+        const FilmGrain(),
+      ],
+    );
+
+    backdrop = IgnorePointer(child: backdrop);
+
+    Widget stack = Stack(
+      fit: StackFit.expand,
+      children: [
+        backdrop,
+        widget.child,
+      ],
     );
 
     if (phase != null) {
-      scaffold = AmbientMotionScope(phase: phase, child: scaffold);
+      stack = AmbientMotionScope(phase: phase, child: stack);
     }
 
-    return scaffold;
+    return stack;
+  }
+}
+
+/// Legacy wrapper; ambient is provided by [AmbientShell] at the app root.
+class LinkvaultAmbientBackground extends StatelessWidget {
+  const LinkvaultAmbientBackground({
+    super.key,
+    required this.child,
+    this.intensity = LinkvaultGradients.ambientIntensity,
+  });
+
+  final Widget child;
+  final double intensity;
+
+  @override
+  Widget build(BuildContext context) => child;
+}
+
+/// Scaffold with transparent background so the global ambient shell shows through.
+class LinkvaultAmbientScaffold extends StatelessWidget {
+  const LinkvaultAmbientScaffold({
+    super.key,
+    this.appBar,
+    required this.body,
+    this.floatingActionButton,
+    this.floatingActionButtonLocation,
+    this.extendBody = false,
+    this.extendBodyBehindAppBar = false,
+    this.ambientIntensity = LinkvaultGradients.ambientIntensity,
+  });
+
+  final PreferredSizeWidget? appBar;
+  final Widget body;
+  final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
+  final bool extendBody;
+  final bool extendBodyBehindAppBar;
+  final double ambientIntensity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBody: extendBody,
+      extendBodyBehindAppBar: extendBodyBehindAppBar,
+      appBar: appBar,
+      body: body,
+      floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
+    );
   }
 }

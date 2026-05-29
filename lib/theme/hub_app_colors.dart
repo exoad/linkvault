@@ -3,24 +3,21 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../hub/hub_module.dart';
-import 'linkvault_accent.dart';
+import 'ambient_lava_palette.dart';
 
-/// Living colors for hub apps — subtle blends with the global edge-glow cycle.
+/// Living colors for hub apps — blends app seeds with the auto-cycling palette.
 abstract final class HubAppColors {
   static HubAppPalette palette(
-    LinkvaultAccent accent,
     HubAppDefinition app,
     double phase,
   ) {
     final p = phase + app.phaseOffset;
     final primary = _living(
-      accent: accent,
       seed: app.seedPrimary,
       phase: p,
       offset: 0.0,
     );
     final secondary = _living(
-      accent: accent,
       seed: app.seedSecondary,
       phase: p,
       offset: 0.33,
@@ -35,12 +32,11 @@ abstract final class HubAppColors {
   }
 
   static Color _living({
-    required LinkvaultAccent accent,
     required Color seed,
     required double phase,
     required double offset,
   }) {
-    final cycle = accent.cycleColor(phase + offset);
+    final cycle = AmbientLavaPalette.colorAt(phase + offset);
     final blend = 0.34 + 0.22 * _wave(phase + offset * 1.7);
     return Color.lerp(seed, cycle, blend)!;
   }

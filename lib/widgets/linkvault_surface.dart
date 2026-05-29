@@ -2,14 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../theme/linkvault_accent.dart';
+import '../animations/interaction_motion.dart';
+import '../theme/ambient_lava_palette.dart';
 import '../theme/linkvault_design.dart';
 import 'linkvault_animated_ambient.dart';
 
-/// Flat container with a faint living tint drawn from the ambient glow.
-///
-/// No gradient fill or border — just a calm surface that breathes with the
-/// same palette as the edges, so cards feel part of the serene whole.
+/// Flat container with a faint living tint and soft press feedback.
 class LinkvaultSurface extends StatelessWidget {
   const LinkvaultSurface({
     super.key,
@@ -30,8 +28,6 @@ class LinkvaultSurface extends StatelessWidget {
   final VoidCallback? onLongPress;
   final ValueChanged<bool>? onHighlightChanged;
   final EdgeInsetsGeometry? padding;
-
-  /// Whether to apply the subtle ambient tint (off for plain surfaces).
   final bool tinted;
 
   @override
@@ -43,22 +39,20 @@ class LinkvaultSurface extends StatelessWidget {
     final inner =
         padding != null ? Padding(padding: padding!, child: child) : child;
 
-    final accent = tinted ? Theme.of(context).extension<LinkvaultAccent>() : null;
     final phase = tinted ? AmbientMotionScope.maybeOf(context) : null;
 
     Widget content;
-    if (accent != null && phase != null) {
+    if (phase != null) {
       content = _AmbientTintedBox(
         base: base,
-        accent: accent,
         phase: phase,
         radius: radius,
         child: inner,
       );
-    } else if (accent != null) {
+    } else if (tinted) {
       content = DecoratedBox(
         decoration: BoxDecoration(
-          color: _tint(base, accent.cycleColor(0), 0.06),
+          color: _tint(base, AmbientLavaPalette.colorAt(0), 0.06),
           borderRadius: radius,
         ),
         child: inner,
@@ -71,15 +65,12 @@ class LinkvaultSurface extends StatelessWidget {
     }
 
     if (onTap != null || onLongPress != null) {
-      content = Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          onHighlightChanged: onHighlightChanged,
-          borderRadius: radius,
-          child: content,
-        ),
+      content = AlivePressable(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        onHighlightChanged: onHighlightChanged,
+        borderRadius: radius,
+        child: content,
       );
     }
 
@@ -87,7 +78,6 @@ class LinkvaultSurface extends StatelessWidget {
   }
 }
 
-/// Nudges [base] toward [tint] by [amount] while preserving the base alpha.
 Color _tint(Color base, Color tint, double amount) {
   return Color.from(
     alpha: base.a,
@@ -97,18 +87,15 @@ Color _tint(Color base, Color tint, double amount) {
   );
 }
 
-/// Rebuilds only the surface fill each frame; [child] stays static.
 class _AmbientTintedBox extends StatelessWidget {
   const _AmbientTintedBox({
     required this.base,
-    required this.accent,
     required this.phase,
     required this.radius,
     required this.child,
   });
 
   final Color base;
-  final LinkvaultAccent accent;
   final Animation<double> phase;
   final BorderRadius radius;
   final Widget child;
@@ -119,8 +106,7 @@ class _AmbientTintedBox extends StatelessWidget {
       animation: phase,
       child: child,
       builder: (context, child) {
-        // Containers drift slower than the edges for a calmer feel.
-        final cycle = accent.cycleColor(phase.value * 0.5);
+        final cycle = AmbientLavaPalette.colorAt(phase.value * 0.5);
         final breathe = 0.5 + 0.5 * math.sin(phase.value * math.pi * 2);
         final amount = 0.05 + 0.03 * breathe;
         return DecoratedBox(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'ambient_lava_palette.dart';
+
 /// Chromatic accent used for edge gradients and glow — not for base UI chrome.
 @immutable
 class LinkvaultAccent extends ThemeExtension<LinkvaultAccent> {
@@ -67,14 +69,6 @@ extension LinkvaultAccentContext on BuildContext {
 }
 
 extension LinkvaultAccentCycle on LinkvaultAccent {
-  /// Smoothly cycles primary → secondary → tertiary → primary for a phase in
-  /// any range. Used for the living edge glow, hub tiles, and surface tints.
-  Color cycleColor(double phase) {
-    final colors = [primary, secondary, tertiary];
-    final wrapped = ((phase % 1.0) + 1.0) % 1.0;
-    final p = wrapped * colors.length;
-    final index = p.floor() % colors.length;
-    final next = (index + 1) % colors.length;
-    return Color.lerp(colors[index], colors[next], p - p.floor())!;
-  }
+  /// Smoothly cycles through the global lava palette for [phase].
+  Color cycleColor(double phase) => AmbientLavaPalette.colorAt(phase);
 }

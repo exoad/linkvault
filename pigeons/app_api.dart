@@ -75,6 +75,13 @@ abstract class InstallHostApi {
   void installApk(String path);
 }
 
+/// Native shell hooks (splash handoff, window polish).
+@HostApi()
+abstract class UiHostApi {
+  /// Called after the first Flutter frame so Android can dismiss the splash.
+  void notifyUiReady();
+}
+
 /// External intent entry point that Flutter pulls from on startup (Kotlin).
 @HostApi()
 abstract class IntentHostApi {

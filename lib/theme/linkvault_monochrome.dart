@@ -4,24 +4,24 @@ import 'package:flutter/material.dart';
 ///
 /// Chromatic accent lives in [LinkvaultAccent] (gradients, glow, folder tints).
 abstract final class LinkvaultMonochrome {
-  static const Color _lightSurface = Color(0xFFFFFFFF);
-  static const Color _lightOnSurface = Color(0xFF000000);
   static const Color _darkSurface = Color(0xFF000000);
   static const Color _darkOnSurface = Color(0xFFFFFFFF);
 
+  /// The only supported app appearance (dark).
+  static ColorScheme get dark => scheme(Brightness.dark);
+
   static ColorScheme scheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final surface = isDark ? _darkSurface : _lightSurface;
-    final onSurface = isDark ? _darkOnSurface : _lightOnSurface;
-    final container = isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF5F5F5);
-    final containerHigh = isDark ? const Color(0xFF141414) : const Color(0xFFEBEBEB);
-    final containerHighest = isDark ? const Color(0xFF1C1C1C) : const Color(0xFFE0E0E0);
-    final outline = isDark
-        ? onSurface.withValues(alpha: 0.22)
-        : onSurface.withValues(alpha: 0.14);
+    assert(isDark, 'Linkvault only supports dark mode');
+    const surface = _darkSurface;
+    const onSurface = _darkOnSurface;
+    const container = Color(0xFF0A0A0A);
+    const containerHigh = Color(0xFF141414);
+    const containerHighest = Color(0xFF1C1C1C);
+    final outline = onSurface.withValues(alpha: 0.22);
 
     return ColorScheme(
-      brightness: brightness,
+      brightness: Brightness.dark,
       primary: onSurface,
       onPrimary: surface,
       primaryContainer: containerHigh,
@@ -34,31 +34,27 @@ abstract final class LinkvaultMonochrome {
       onTertiary: surface,
       tertiaryContainer: container,
       onTertiaryContainer: onSurface,
-      error: isDark ? const Color(0xFFFF6B6B) : const Color(0xFFB00020),
-      onError: _lightSurface,
-      errorContainer: isDark ? const Color(0xFF2A1414) : const Color(0xFFFFE5E9),
-      onErrorContainer: isDark ? const Color(0xFFFFB4B4) : const Color(0xFF5C0011),
+      error: const Color(0xFFFF6B6B),
+      onError: Colors.white,
+      errorContainer: const Color(0xFF2A1414),
+      onErrorContainer: const Color(0xFFFFB4B4),
       surface: surface,
       onSurface: onSurface,
-      surfaceDim: isDark ? _darkSurface : const Color(0xFFF0F0F0),
-      surfaceBright: isDark ? const Color(0xFF1A1A1A) : _lightSurface,
+      surfaceDim: _darkSurface,
+      surfaceBright: const Color(0xFF1A1A1A),
       surfaceContainerLowest: surface,
       surfaceContainerLow: container,
       surfaceContainer: containerHigh,
       surfaceContainerHigh: containerHighest,
-      surfaceContainerHighest: isDark ? const Color(0xFF242424) : const Color(0xFFD6D6D6),
-      onSurfaceVariant: isDark
-          ? onSurface.withValues(alpha: 0.65)
-          : onSurface.withValues(alpha: 0.55),
+      surfaceContainerHighest: const Color(0xFF242424),
+      onSurfaceVariant: onSurface.withValues(alpha: 0.65),
       outline: outline,
-      outlineVariant: isDark
-          ? onSurface.withValues(alpha: 0.12)
-          : onSurface.withValues(alpha: 0.08),
+      outlineVariant: onSurface.withValues(alpha: 0.12),
       shadow: Colors.black,
       scrim: Colors.black,
-      inverseSurface: isDark ? _lightSurface : _darkSurface,
-      onInverseSurface: isDark ? _lightOnSurface : _darkOnSurface,
-      inversePrimary: isDark ? _darkOnSurface : _darkSurface,
+      inverseSurface: Colors.white,
+      onInverseSurface: Colors.black,
+      inversePrimary: _darkOnSurface,
     );
   }
 }

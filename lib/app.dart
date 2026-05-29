@@ -4,11 +4,12 @@ import 'package:flutter/services.dart';
 import 'app_scope.dart';
 import 'data/bookmark_repository.dart';
 import 'data/note_repository.dart';
-import 'features/hub/hub_screen.dart';
+import 'shell/app_shell.dart';
 import 'theme/app_theme.dart';
 import 'theme/linkvault_monochrome.dart';
 import 'theme/system_ui.dart';
 import 'theme/theme_controller.dart';
+import 'widgets/linkvault_ambient_background.dart';
 
 class LinkvaultApp extends StatelessWidget {
   const LinkvaultApp({
@@ -26,37 +27,29 @@ class LinkvaultApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = buildAppTheme(
+      scheme: LinkvaultMonochrome.dark,
+      accent: themeController.accent,
+    );
+
     return AppScope(
       repository: repository,
       notes: notes,
-      child: ListenableBuilder(
-        listenable: themeController,
-        builder: (context, _) {
-          final accent = themeController.accent;
-
-          ThemeData themeFor(Brightness brightness) {
-            return buildAppTheme(
-              scheme: LinkvaultMonochrome.scheme(brightness),
-              accent: accent,
-            );
-          }
-
-          return MaterialApp(
-            title: 'Linkvault',
-            navigatorKey: navigatorKey,
-            themeMode: themeController.themeMode,
-            theme: themeFor(Brightness.light),
-            darkTheme: themeFor(Brightness.dark),
-            builder: (context, child) {
-              final scheme = Theme.of(context).colorScheme;
-              return AnnotatedRegion<SystemUiOverlayStyle>(
-                value: overlayForScheme(scheme),
-                child: child ?? const SizedBox.shrink(),
-              );
-            },
-            home: HubScreen(themeController: themeController),
+      child: MaterialApp(
+        title: 'Linkvault',
+        navigatorKey: navigatorKey,
+        theme: theme,
+        themeMode: ThemeMode.dark,
+        builder: (context, child) {
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: overlayForScheme(theme.colorScheme),
+            child: AmbientShell(
+              key: const ValueKey('ambient-shell'),
+              child: child ?? const SizedBox.shrink(),
+            ),
           );
         },
+        home: const AppShell(),
       ),
     );
   }

@@ -6,8 +6,10 @@ import '../theme/app_motion.dart';
 class AppPageRoute<T> extends PageRouteBuilder<T> {
   AppPageRoute({required this.child})
       : super(
+          opaque: false,
+          barrierColor: Colors.transparent,
           pageBuilder: (context, animation, secondaryAnimation) => child,
-          transitionDuration: AppMotion.normal,
+          transitionDuration: AppMotion.slow,
           reverseTransitionDuration: AppMotion.normal,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final curved = CurvedAnimation(
@@ -25,17 +27,14 @@ class AppPageRoute<T> extends PageRouteBuilder<T> {
             );
             return SlideTransition(
               position: offsetTween.animate(curved),
-              child: FadeTransition(
-                opacity: curved,
-                child: SlideTransition(
-                  position: secondaryOffset.animate(
-                    CurvedAnimation(
-                      parent: secondaryAnimation,
-                      curve: AppMotion.standard,
-                    ),
+              child: SlideTransition(
+                position: secondaryOffset.animate(
+                  CurvedAnimation(
+                    parent: secondaryAnimation,
+                    curve: AppMotion.standard,
                   ),
-                  child: child,
                 ),
+                child: child,
               ),
             );
           },

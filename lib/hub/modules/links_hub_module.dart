@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-import '../../animations/app_page_route.dart';
 import '../../app_scope.dart';
+import '../../shell/app_shell.dart';
 import '../../features/add_link/add_link_sheet.dart';
-import '../../features/links/links_app_screen.dart';
 import '../../platform/app_api.g.dart';
 import '../hub_module.dart';
 
@@ -32,10 +31,7 @@ final class LinksHubModule implements HubModule, IntentAware {
 
   @override
   void open(BuildContext context) {
-    Navigator.push<void>(
-      context,
-      AppPageRoute(child: const LinksAppScreen()),
-    );
+    AppShellScope.of(context).openModule(id);
   }
 
   @override

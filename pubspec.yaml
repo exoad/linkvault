@@ -1,7 +1,7 @@
 name: linkvault
 description: "Local links vault"
 publish_to: 'none'
-version: 1.0.8+9
+version: 1.0.9+10
 
 environment:
   sdk: ^3.12.0
@@ -54,18 +54,18 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: assets/branding/app_icon.png
-  adaptive_icon_background: "#6750A4"
+  adaptive_icon_background: assets/branding/app_icon_background.png
   adaptive_icon_foreground: assets/branding/app_icon_foreground.png
 
 flutter_native_splash:
-  color: "#FFFFFF"
-  color_dark: "#121216"
-  image: assets/branding/splash_android12_icon.png
+  color: "#000000"
+  color_dark: "#000000"
+  image: assets/branding/splash_android12_icon_dark.png
   image_dark: assets/branding/splash_android12_icon_dark.png
   android_12:
-    color: "#FFFFFF"
-    color_dark: "#121216"
-    image: assets/branding/splash_android12_icon.png
+    color: "#000000"
+    color_dark: "#000000"
+    image: assets/branding/splash_android12_icon_dark.png
     image_dark: assets/branding/splash_android12_icon_dark.png
-    icon_background_color: "#FFFFFF"
-    icon_background_color_dark: "#121216"
+    icon_background_color: "#000000"
+    icon_background_color_dark: "#000000"

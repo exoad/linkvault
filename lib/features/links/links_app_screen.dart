@@ -3,6 +3,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../animations/animated_sheet.dart';
 import '../../animations/app_page_route.dart';
+import '../../animations/interaction_motion.dart';
 import '../../animations/list_entrance.dart';
 import '../../app_scope.dart';
 import '../../hub/modules/links_hub_module.dart';
@@ -10,13 +11,13 @@ import '../../models/folder.dart';
 import '../../models/layout_mode.dart';
 import '../../services/layout_preferences.dart';
 import '../../theme/hub_app_colors.dart';
-import '../../theme/linkvault_accent.dart';
 import '../../theme/linkvault_design.dart';
 import '../../widgets/animated_folder_card.dart';
 import '../../widgets/folder_grid_tile.dart';
 import '../../widgets/folder_list_tile.dart';
 import '../../widgets/layout_mode_toggle.dart';
 import '../../widgets/linkvault_animated_ambient.dart';
+import '../../widgets/hub_app_back_button.dart';
 import '../../widgets/linkvault_ambient_background.dart';
 import '../../widgets/paste_link_fab.dart';
 import '../add_link/add_link_sheet.dart';
@@ -197,7 +198,6 @@ class _LinksAppScreenState extends State<LinksAppScreen> {
   Widget build(BuildContext context) {
     final repo = AppScope.of(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final accent = Theme.of(context).extension<LinkvaultAccent>();
     final phase = AmbientMotionScope.maybeOf(context);
 
     Widget appBarTitle(Color iconColor) => Row(
@@ -209,11 +209,11 @@ class _LinksAppScreenState extends State<LinksAppScreen> {
           ],
         );
 
-    final title = accent != null && phase != null
+    final title = phase != null
         ? AnimatedBuilder(
             animation: phase,
             builder: (context, _) => appBarTitle(
-              HubAppColors.palette(accent, _app, phase.value).primary,
+              HubAppColors.palette(_app, phase.value).primary,
             ),
           )
         : appBarTitle(_app.seedPrimary);
@@ -222,11 +222,11 @@ class _LinksAppScreenState extends State<LinksAppScreen> {
       extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        leading: const BackButton(),
+        leading: const HubAppBackButton(),
         title: title,
         actions: [
           LayoutModeToggle(mode: _layoutMode, onChanged: _setLayoutMode),
-          IconButton(
+          AliveIconButton(
             tooltip: 'New folder',
             icon: PhosphorIcon(PhosphorIcons.folderPlus),
             onPressed: _createFolder,
@@ -255,15 +255,18 @@ class _LinksAppScreenState extends State<LinksAppScreen> {
                     ),
               ),
               const SizedBox(height: LinkvaultDesign.spaceXs),
-              Text(
-                linkLabel,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+              aliveFadeSwap(
+                value: linkLabel,
+                child: Text(
+                  linkLabel,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
               ),
               const SizedBox(height: LinkvaultDesign.spaceLg),
             ],
-          );
+          ).listEntrance(context, index: 0);
 
           Widget folderTile(FolderModel folder) {
             final locked =
@@ -313,7 +316,8 @@ class _LinksAppScreenState extends State<LinksAppScreen> {
                         padding: EdgeInsets.only(
                           bottom: index < folders.length - 1 ? 12 : 0,
                         ),
-                        child: folderTile(folders[index]),
+                        child: folderTile(folders[index])
+                            .listEntrance(context, index: index + 1),
                       ),
                       childCount: folders.length,
                     ),
@@ -331,7 +335,8 @@ class _LinksAppScreenState extends State<LinksAppScreen> {
                       childAspectRatio: 0.92,
                     ),
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => folderTile(folders[index]),
+                      (context, index) => folderTile(folders[index])
+                          .listEntrance(context, index: index + 1),
                       childCount: folders.length,
                     ),
                   ),

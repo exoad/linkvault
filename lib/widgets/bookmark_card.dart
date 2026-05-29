@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../animations/interaction_motion.dart';
 import '../models/bookmark.dart';
 import '../models/fetch_status.dart';
 import '../theme/app_motion.dart';
-import '../theme/linkvault_accent.dart';
+import '../theme/ambient_lava_palette.dart';
 import '../theme/linkvault_design.dart';
 import '../theme/linkvault_typography.dart';
+import 'linkvault_animated_ambient.dart';
 import 'linkvault_icon_chip.dart';
 import 'linkvault_surface.dart';
 
-class BookmarkCard extends StatefulWidget {
+class BookmarkCard extends StatelessWidget {
   const BookmarkCard({
     super.key,
     required this.bookmark,
@@ -22,84 +24,53 @@ class BookmarkCard extends StatefulWidget {
   final VoidCallback? onFetchTitle;
 
   @override
-  State<BookmarkCard> createState() => _BookmarkCardState();
-}
-
-class _BookmarkCardState extends State<BookmarkCard> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final motion = motionEnabled(context);
 
     return Semantics(
-      label: '${widget.bookmark.title}, ${widget.bookmark.url}',
+      label: '${bookmark.title}, ${bookmark.url}',
       button: true,
-      child: AnimatedScale(
-        scale: motion && _pressed ? 0.98 : 1,
-        duration: AppMotion.fast,
-        curve: AppMotion.standard,
-        child: LinkvaultSurface(
-          onTap: widget.onTap,
-          onHighlightChanged: motion
-              ? (value) => setState(() => _pressed = value)
-              : null,
-          child: Padding(
-            padding: const EdgeInsets.all(LinkvaultDesign.spaceLg),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _DomainAvatar(url: widget.bookmark.url),
-                const SizedBox(width: LinkvaultDesign.spaceMd),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AnimatedSwitcher(
-                        duration: AppMotion.normal,
-                        switchInCurve: AppMotion.decelerate,
-                        switchOutCurve: AppMotion.standard,
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0, 0.15),
-                                end: Offset.zero,
-                              ).animate(animation),
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: Text(
-                          widget.bookmark.title,
-                          key: ValueKey(widget.bookmark.title),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: LinkvaultDesign.spaceXs),
-                      Text(
-                        widget.bookmark.url,
+      child: LinkvaultSurface(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(LinkvaultDesign.spaceLg),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DomainAvatar(url: bookmark.url),
+              const SizedBox(width: LinkvaultDesign.spaceMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    aliveFadeSwap(
+                      value: bookmark.title,
+                      child: Text(
+                        bookmark.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: LinkvaultTypography.meta(scheme),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: LinkvaultDesign.spaceXs),
+                    Text(
+                      bookmark.url,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: LinkvaultTypography.meta(scheme),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: LinkvaultDesign.spaceSm),
-                _StatusTrailing(
-                  bookmark: widget.bookmark,
-                  onFetchTitle: widget.onFetchTitle,
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: LinkvaultDesign.spaceSm),
+              _StatusTrailing(
+                bookmark: bookmark,
+                onFetchTitle: onFetchTitle,
+              ),
+            ],
           ),
         ),
       ),
@@ -123,11 +94,9 @@ class _DomainAvatar extends StatelessWidget {
     }
   }
 
-  Color _tint(ColorScheme scheme, LinkvaultAccent? accent) {
-    final code = _initial.codeUnitAt(0);
-    if (accent != null) {
-      final hues = [accent.primary, accent.secondary, accent.tertiary];
-      return hues[code % hues.length];
+  Color _tint(ColorScheme scheme, double? phase) {
+    if (phase != null) {
+      return AmbientLavaPalette.colorAt(phase + _initial.codeUnitAt(0) * 0.07);
     }
     return scheme.onSurface.withValues(alpha: 0.5);
   }
@@ -135,8 +104,8 @@ class _DomainAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final accent = Theme.of(context).extension<LinkvaultAccent>();
-    final tint = _tint(scheme, accent);
+    final phase = AmbientMotionScope.maybeOf(context)?.value;
+    final tint = _tint(scheme, phase);
     return LinkvaultIconChip(
       color: tint,
       dimension: 48,
@@ -194,7 +163,18 @@ class _StatusTrailing extends StatelessWidget {
     }
 
     return AnimatedSwitcher(
-      duration: AppMotion.fast,
+      duration: AppMotion.normal,
+      switchInCurve: AppMotion.decelerate,
+      switchOutCurve: AppMotion.standard,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.85, end: 1).animate(animation),
+            child: child,
+          ),
+        );
+      },
       child: child,
     );
   }

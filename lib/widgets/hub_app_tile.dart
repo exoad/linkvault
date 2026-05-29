@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../animations/interaction_motion.dart';
 import '../hub/hub_module.dart';
+import '../theme/app_motion.dart';
 import '../theme/hub_app_colors.dart';
-import '../theme/linkvault_accent.dart';
 import '../theme/linkvault_design.dart';
 import 'linkvault_animated_ambient.dart';
 import 'linkvault_icon_chip.dart';
@@ -27,28 +28,21 @@ class HubAppTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final phase = AmbientMotionScope.maybeOf(context);
-    final accent = Theme.of(context).extension<LinkvaultAccent>();
 
-    if (phase != null && accent != null) {
+    if (phase != null) {
       return AnimatedBuilder(
         animation: phase,
         builder: (context, _) => _buildTile(
           context,
-          HubAppColors.palette(accent, app, phase.value),
+          HubAppColors.palette(app, phase.value),
         ),
       );
     }
 
-    final fallback = accent == null
-        ? HubAppPalette(
-            primary: app.seedPrimary,
-            secondary: app.seedSecondary,
-            tertiary: app.seedSecondary,
-            glow: app.seedPrimary.withValues(alpha: 0.12),
-          )
-        : HubAppColors.palette(accent, app, 0);
-
-    return _buildTile(context, fallback);
+    return _buildTile(
+      context,
+      HubAppColors.palette(app, 0),
+    );
   }
 
   Widget _buildTile(BuildContext context, HubAppPalette colors) {
@@ -84,7 +78,10 @@ class HubAppTile extends StatelessWidget {
                   ),
             ),
             const Spacer(),
-            _StatPill(label: statLabel, color: colors.primary),
+            _StatPill(
+              label: statLabel,
+              color: colors.primary,
+            ),
           ],
         ),
       ),
@@ -101,23 +98,27 @@ class _StatPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: LinkvaultDesign.spaceMd,
-        vertical: LinkvaultDesign.spaceXs + 2,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: LinkvaultDesign.radiusControl,
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
+    return aliveFadeSwap(
+      value: label,
+      duration: AppMotion.fast,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LinkvaultDesign.spaceMd,
+          vertical: LinkvaultDesign.spaceXs + 2,
+        ),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHigh,
+          borderRadius: LinkvaultDesign.radiusControl,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+        ),
       ),
     );
   }

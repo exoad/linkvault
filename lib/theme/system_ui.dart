@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Configures Android/iOS for edge-to-edge drawing behind system bars.
+/// Edge-to-edge with light system bar icons on the dark canvas.
 void configureEdgeToEdge() {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(overlayForScheme());
 }
 
-/// Overlay icons and bar colors that match the active [ColorScheme].
-SystemUiOverlayStyle overlayForScheme(ColorScheme scheme) {
-  final brightness = scheme.brightness;
-  return SystemUiOverlayStyle(
+/// Overlay icons and bar colors for the fixed dark [ColorScheme].
+SystemUiOverlayStyle overlayForScheme([ColorScheme? scheme]) {
+  return const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
-    statusBarIconBrightness:
-        brightness == Brightness.dark ? Brightness.light : Brightness.dark,
-    statusBarBrightness: brightness,
+    statusBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark,
     systemNavigationBarColor: Colors.transparent,
-    systemNavigationBarIconBrightness:
-        brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+    systemNavigationBarIconBrightness: Brightness.light,
     systemNavigationBarContrastEnforced: false,
   );
 }

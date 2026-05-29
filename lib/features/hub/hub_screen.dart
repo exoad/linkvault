@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../animations/app_page_route.dart';
+import '../../animations/interaction_motion.dart';
+import '../../animations/list_entrance.dart';
 import '../../hub/hub_module.dart';
 import '../../hub/hub_registry.dart';
-import '../../theme/theme_controller.dart';
 import '../../widgets/hub_app_tile.dart';
 import '../../widgets/hub_coming_soon_tile.dart';
 import '../../widgets/hub_hero_header.dart';
@@ -13,15 +14,13 @@ import '../settings/settings_screen.dart';
 
 /// Your Hub — modular launcher for registered [HubModule] apps.
 class HubScreen extends StatelessWidget {
-  const HubScreen({super.key, required this.themeController});
-
-  final ThemeController themeController;
+  const HubScreen({super.key});
 
   Future<void> _openSettings(BuildContext context) async {
     await Navigator.push<void>(
       context,
       AppPageRoute(
-        child: SettingsScreen(themeController: themeController),
+        child: const SettingsScreen(),
       ),
     );
   }
@@ -40,7 +39,7 @@ class HubScreen extends StatelessWidget {
       appBar: AppBar(
         title: const SizedBox.shrink(),
         actions: [
-          IconButton(
+          AliveIconButton(
             tooltip: 'Settings',
             icon: PhosphorIcon(PhosphorIcons.gear),
             onPressed: () => _openSettings(context),
@@ -56,14 +55,14 @@ class HubScreen extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 const HubHeroHeader(
                   subtitle: 'Apps on this device · pick one to open',
-                ),
+                ).heroEntrance(context),
                 const SizedBox(height: 24),
                 Text(
                   'Apps',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
-                ),
+                ).listEntrance(context, index: 0),
                 const SizedBox(height: 12),
               ]),
             ),
@@ -88,7 +87,7 @@ class HubScreen extends StatelessWidget {
                         statLabel: snapshot.data ?? '…',
                         height: tileHeight,
                         onTap: () => module.open(context),
-                      );
+                      ).listEntrance(context, index: index + 1);
                     },
                   );
                 },
@@ -105,7 +104,8 @@ class HubScreen extends StatelessWidget {
                     padding: EdgeInsets.only(
                       bottom: index < teasers.length - 1 ? 10 : 0,
                     ),
-                    child: HubComingSoonTile(module: teasers[index]),
+                    child: HubComingSoonTile(module: teasers[index])
+                        .listEntrance(context, index: index),
                   ),
                   childCount: teasers.length,
                 ),

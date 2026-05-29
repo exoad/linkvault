@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../animations/app_page_route.dart';
+import '../../animations/interaction_motion.dart';
 import '../../animations/list_entrance.dart';
 import '../../app_scope.dart';
 import '../../hub/modules/notes_hub_module.dart';
 import '../../models/note.dart';
 import '../../theme/hub_app_colors.dart';
-import '../../theme/linkvault_accent.dart';
 import '../../theme/linkvault_design.dart';
 import '../../theme/linkvault_typography.dart';
 import '../../widgets/linkvault_animated_ambient.dart';
+import '../../widgets/hub_app_back_button.dart';
 import '../../widgets/linkvault_ambient_background.dart';
 import '../../widgets/linkvault_icon_chip.dart';
 import '../../widgets/linkvault_surface.dart';
@@ -56,7 +57,6 @@ class NotesAppScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final notes = AppScope.notesOf(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final accent = Theme.of(context).extension<LinkvaultAccent>();
     final phase = AmbientMotionScope.maybeOf(context);
 
     Widget appBarTitle(Color iconColor) => Row(
@@ -68,11 +68,11 @@ class NotesAppScreen extends StatelessWidget {
           ],
         );
 
-    final title = accent != null && phase != null
+    final title = phase != null
         ? AnimatedBuilder(
             animation: phase,
             builder: (context, _) => appBarTitle(
-              HubAppColors.palette(accent, _app, phase.value).primary,
+              HubAppColors.palette(_app, phase.value).primary,
             ),
           )
         : appBarTitle(_app.seedPrimary);
@@ -81,10 +81,10 @@ class NotesAppScreen extends StatelessWidget {
       extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        leading: const BackButton(),
+        leading: const HubAppBackButton(),
         title: title,
         actions: [
-          IconButton(
+          AliveIconButton(
             tooltip: 'New note',
             icon: PhosphorIcon(PhosphorIcons.plus),
             onPressed: () => _openEditor(context),
@@ -141,7 +141,7 @@ class NotesAppScreen extends StatelessWidget {
         onPressed: () => _openEditor(context),
         icon: PhosphorIcon(PhosphorIcons.notePencil),
         label: const Text('New note'),
-      ),
+      ).aliveBreathe(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
@@ -156,14 +156,9 @@ class _EmptyNotes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final accent = Theme.of(context).extension<LinkvaultAccent>();
     final phase = AmbientMotionScope.maybeOf(context);
-    final colors = accent != null && phase != null
-        ? HubAppColors.palette(
-            accent,
-            NotesAppScreen._app,
-            phase.value,
-          )
+    final colors = phase != null
+        ? HubAppColors.palette(NotesAppScreen._app, phase.value)
         : null;
 
     return Padding(

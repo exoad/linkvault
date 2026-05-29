@@ -3,8 +3,8 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../animations/app_page_route.dart';
 import '../../app_scope.dart';
+import '../../shell/app_shell.dart';
 import '../../features/notes/note_editor_screen.dart';
-import '../../features/notes/notes_app_screen.dart';
 import '../../platform/app_api.g.dart';
 import '../hub_module.dart';
 
@@ -32,10 +32,7 @@ final class NotesHubModule implements HubModule, IntentAware {
 
   @override
   void open(BuildContext context) {
-    Navigator.push<void>(
-      context,
-      AppPageRoute(child: const NotesAppScreen()),
-    );
+    AppShellScope.of(context).openModule(id);
   }
 
   @override
@@ -51,7 +48,7 @@ final class NotesHubModule implements HubModule, IntentAware {
 
   @override
   Future<void> handleIntent(BuildContext context, IncomingIntent intent) {
-    // Open a fresh note editor, seeded with shared text when present.
+    AppShellScope.of(context).openModule(id);
     return Navigator.push<void>(
       context,
       AppPageRoute(child: NoteEditorScreen(initialBody: intent.text)),

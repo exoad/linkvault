@@ -23,6 +23,12 @@ Future<T?> showAppBottomSheet<T>({
             end: 0,
             duration: AppMotion.normal,
             curve: AppMotion.decelerate,
+          )
+          .scale(
+            begin: const Offset(0.98, 0.98),
+            end: const Offset(1, 1),
+            duration: AppMotion.normal,
+            curve: AppMotion.spring,
           );
     },
   );
