@@ -6,8 +6,9 @@ Linkvault is designed so **normal app updates keep your data**.
 
 | Store | Contents |
 |-------|----------|
-| SQLite (`linkvault` database) | Folders, bookmarks, notes, optional folder PIN hashes |
-| SharedPreferences | Theme mode, accent color, layout preferences |
+| SQLite (`linkvault` database) | Folders, bookmarks, notes, chat sessions/messages, optional folder PIN hashes |
+| SharedPreferences | Theme mode, accent color, layout preferences, chat inference backend (CPU/GPU), optional Hugging Face token |
+| App documents storage | Downloaded on-device LLM weights (~3 GB for Gemma E2B; not in the APK) |
 
 Nothing is synced to a server.
 
@@ -35,6 +36,8 @@ Schema version is defined in [`lib/data/app_database.dart`](lib/data/app_databas
 We do **not** drop or recreate the database on version bumps. Existing folders and bookmarks are migrated in place.
 
 Schema **v3** adds the `notes` table for the Notes app.
+
+Schema **v4** adds `chat_sessions` and `chat_messages` for the Chat app (local conversation history only; inference runs on-device).
 
 **Automatic migration:** On launch, Drift compares the on-disk `user_version` to `AppDatabase.schemaVersion`. If the app is newer (e.g. installed v1.0.5 on schema 2, updated to v1.0.6 on schema 3), `onUpgrade` runs `DatabaseMigrations.migrateStepwise` (v2 → v3, etc.) before any query. No user action required.
 

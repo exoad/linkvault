@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'ai/chat/chat_service.dart';
 import 'data/bookmark_repository.dart';
+import 'data/chat_repository.dart';
 import 'data/note_repository.dart';
 
 class AppScope extends InheritedWidget {
@@ -8,11 +10,15 @@ class AppScope extends InheritedWidget {
     super.key,
     required this.repository,
     required this.notes,
+    required this.chat,
+    required this.chatService,
     required super.child,
   });
 
   final BookmarkRepository repository;
   final NoteRepository notes;
+  final ChatRepository chat;
+  final ChatService chatService;
 
   static AppScope _scope(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
@@ -28,7 +34,15 @@ class AppScope extends InheritedWidget {
 
   static NoteRepository notesOf(BuildContext context) => _scope(context).notes;
 
+  static ChatRepository chatOf(BuildContext context) => _scope(context).chat;
+
+  static ChatService chatServiceOf(BuildContext context) =>
+      _scope(context).chatService;
+
   @override
   bool updateShouldNotify(AppScope oldWidget) =>
-      oldWidget.repository != repository || oldWidget.notes != notes;
+      oldWidget.repository != repository ||
+      oldWidget.notes != notes ||
+      oldWidget.chat != chat ||
+      oldWidget.chatService != chatService;
 }

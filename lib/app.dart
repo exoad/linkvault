@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_scope.dart';
+import 'ai/chat/chat_service.dart';
 import 'data/bookmark_repository.dart';
+import 'data/chat_repository.dart';
 import 'data/note_repository.dart';
 import 'shell/app_shell.dart';
 import 'theme/app_theme.dart';
@@ -16,12 +18,16 @@ class LinkvaultApp extends StatelessWidget {
     super.key,
     required this.repository,
     required this.notes,
+    required this.chat,
+    required this.chatService,
     required this.themeController,
     this.navigatorKey,
   });
 
   final BookmarkRepository repository;
   final NoteRepository notes;
+  final ChatRepository chat;
+  final ChatService chatService;
   final ThemeController themeController;
   final GlobalKey<NavigatorState>? navigatorKey;
 
@@ -35,6 +41,8 @@ class LinkvaultApp extends StatelessWidget {
     return AppScope(
       repository: repository,
       notes: notes,
+      chat: chat,
+      chatService: chatService,
       child: MaterialApp(
         title: 'Linkvault',
         navigatorKey: navigatorKey,

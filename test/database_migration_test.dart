@@ -186,4 +186,61 @@ void main() {
 
     await upgraded.close();
   });
+
+  test('upgrade from schema 3 to 4 adds chat tables', () async {
+    final underlying = sqlite.sqlite3.openInMemory();
+
+    underlying.execute('''
+      CREATE TABLE folders (
+        id TEXT NOT NULL PRIMARY KEY,
+        name TEXT NOT NULL,
+        is_system INTEGER NOT NULL DEFAULT 0 CHECK (is_system IN (0, 1)),
+        color_value INTEGER NOT NULL DEFAULT 4283215692,
+        icon_name TEXT NOT NULL DEFAULT 'folder',
+        is_locked INTEGER NOT NULL DEFAULT 0 CHECK (is_locked IN (0, 1)),
+        pin_salt TEXT,
+        pin_hash TEXT,
+        created_at INTEGER NOT NULL
+      );
+    ''');
+    underlying.execute('''
+      CREATE TABLE bookmarks (
+        id TEXT NOT NULL PRIMARY KEY,
+        folder_id TEXT NOT NULL REFERENCES folders(id),
+        url TEXT NOT NULL,
+        title TEXT NOT NULL,
+        fetch_status TEXT NOT NULL,
+        fetched_at INTEGER,
+        created_at INTEGER NOT NULL
+      );
+    ''');
+    underlying.execute('''
+      CREATE TABLE notes (
+        id TEXT NOT NULL PRIMARY KEY,
+        title TEXT NOT NULL DEFAULT '',
+        body TEXT NOT NULL DEFAULT '',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    ''');
+
+    underlying.userVersion = 3;
+
+    final upgraded = AppDatabase.forTesting(
+      NativeDatabase.opened(underlying),
+    );
+
+    final session = await upgraded.insertChatSession(modelId: 'gemma-4-e2b');
+    await upgraded.insertChatMessage(
+      sessionId: session.id,
+      role: 'user',
+      content: 'Hi',
+    );
+
+    final messages = await upgraded.getChatMessages(session.id);
+    expect(messages, hasLength(1));
+    expect(messages.first.content, 'Hi');
+
+    await upgraded.close();
+  });
 }

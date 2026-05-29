@@ -12,12 +12,13 @@ import 'app_database.dart';
 /// `user_version < schemaVersion`. Users do not need to take any action.
 abstract final class DatabaseMigrations {
   /// Keep in sync with [AppDatabase.schemaVersion].
-  static const int targetSchemaVersion = 3;
+  static const int targetSchemaVersion = 4;
 
   /// Target versions that have a registered upgrade step (2 … [targetSchemaVersion]).
   static final Map<int, Future<void> Function(Migrator migrator)> steps = {
     2: _toV2,
     3: _toV3,
+    4: _toV4,
   };
 
   static bool hasStepForVersion(int version) => steps.containsKey(version);
@@ -56,5 +57,12 @@ abstract final class DatabaseMigrations {
   /// v2 → v3: notes app storage.
   static Future<void> _toV3(Migrator m) async {
     await m.createTable((m.database as AppDatabase).notes);
+  }
+
+  /// v3 → v4: local AI chat history.
+  static Future<void> _toV4(Migrator m) async {
+    final db = m.database as AppDatabase;
+    await m.createTable(db.chatSessions);
+    await m.createTable(db.chatMessages);
   }
 }

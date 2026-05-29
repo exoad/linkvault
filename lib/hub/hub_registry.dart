@@ -1,4 +1,5 @@
 import 'hub_module.dart';
+import 'modules/chat_hub_module.dart';
 import 'modules/links_hub_module.dart';
 import 'modules/notes_hub_module.dart';
 import 'modules/thoughts_hub_module.dart';
@@ -9,6 +10,7 @@ abstract final class HubRegistry {
   static const modules = <HubModule>[
     LinksHubModule(),
     NotesHubModule(),
+    ChatHubModule(),
     ThoughtsHubModule(),
   ];
 

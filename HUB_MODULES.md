@@ -60,4 +60,12 @@ Change `ThoughtsHubModule.status` to `HubModuleStatus.available`, implement `ope
 
 ## App ids
 
-Use stable lowercase string ids (`links`, `notes`, `thoughts`). They are used for definitions, as the `targetModuleId` hint for intent routing, and can be used for deep links or prefs later.
+Use stable lowercase string ids (`links`, `notes`, `chat`, `thoughts`). They are used for definitions, as the `targetModuleId` hint for intent routing, and can be used for deep links or prefs later.
+
+## Chat app (v1.1)
+
+- Module: [`lib/hub/modules/chat_hub_module.dart`](lib/hub/modules/chat_hub_module.dart)
+- UI: [`lib/features/chat/`](lib/features/chat/)
+- AI layer: [`lib/ai/`](lib/ai/) via `flutter_gemma` (Gemma 3n E2B weights downloaded on first use)
+- Shell route: register `ChatHubModule.id` in [`lib/shell/app_shell.dart`](lib/shell/app_shell.dart)
+- Schema v4 chat tables; wire `ChatRepository` + `ChatService` in `main.dart` / `AppScope`

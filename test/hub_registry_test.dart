@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linkvault/hub/hub_module.dart';
 import 'package:linkvault/hub/hub_registry.dart';
+import 'package:linkvault/hub/modules/chat_hub_module.dart';
 import 'package:linkvault/hub/modules/links_hub_module.dart';
 import 'package:linkvault/hub/modules/notes_hub_module.dart';
 import 'package:linkvault/hub/modules/thoughts_hub_module.dart';
@@ -9,7 +10,10 @@ void main() {
   test('launcher excludes coming-soon modules', () {
     final launcherIds =
         HubRegistry.launcher.map((m) => m.definition.id).toList();
-    expect(launcherIds, containsAll([LinksHubModule.id, NotesHubModule.id]));
+    expect(
+      launcherIds,
+      containsAll([LinksHubModule.id, NotesHubModule.id, ChatHubModule.id]),
+    );
     expect(launcherIds, isNot(contains(ThoughtsHubModule.id)));
   });
 

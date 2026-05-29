@@ -1,11 +1,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- Optional OpenCL for Gemma GPU inference (flutter_gemma). -->
+    <uses-native-library
+        android:name="libOpenCL.so"
+        android:required="false" />
+    <uses-native-library
+        android:name="libOpenCL-car.so"
+        android:required="false" />
+    <uses-native-library
+        android:name="libOpenCL-pixel.so"
+        android:required="false" />
+
     <application
         android:label="linkvault"
         android:name=".LinkvaultApplication"
         android:icon="@mipmap/ic_launcher"
-        android:enableOnBackInvokedCallback="true">
+        android:enableOnBackInvokedCallback="true"
+        android:largeHeap="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

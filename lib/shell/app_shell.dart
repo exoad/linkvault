@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../features/hub/hub_screen.dart';
 import '../features/links/links_app_screen.dart';
+import '../features/chat/chat_app_screen.dart';
 import '../features/notes/notes_app_screen.dart';
+import '../hub/modules/chat_hub_module.dart';
 import '../hub/modules/links_hub_module.dart';
 import '../hub/modules/notes_hub_module.dart';
 import '../theme/app_motion.dart';
@@ -63,6 +65,7 @@ class _AppShellState extends State<AppShell> {
     return switch (id) {
       LinksHubModule.id => const LinksAppScreen(),
       NotesHubModule.id => const NotesAppScreen(),
+      ChatHubModule.id => const ChatAppScreen(),
       _ => const SizedBox.shrink(),
     };
   }

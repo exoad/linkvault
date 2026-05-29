@@ -49,7 +49,30 @@ class Notes extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Folders, Bookmarks, Notes])
+class ChatSessions extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text().withDefault(const Constant('New chat'))();
+  TextColumn get modelId => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ChatMessages extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId => text().references(ChatSessions, #id)();
+  TextColumn get role => text()();
+  TextColumn get content => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get toolName => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [Folders, Bookmarks, Notes, ChatSessions, ChatMessages])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
@@ -319,6 +342,95 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteNote(String id) async {
     await (delete(notes)..where((t) => t.id.equals(id))).go();
+  }
+
+  Stream<List<ChatSession>> watchChatSessions() {
+    return (select(chatSessions)
+          ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+        .watch();
+  }
+
+  Stream<List<ChatMessage>> watchChatMessages(String sessionId) {
+    return (select(chatMessages)
+          ..where((t) => t.sessionId.equals(sessionId))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .watch();
+  }
+
+  Future<List<ChatMessage>> getChatMessages(String sessionId) {
+    return (select(chatMessages)
+          ..where((t) => t.sessionId.equals(sessionId))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
+  Future<ChatSession?> getChatSessionById(String id) {
+    return (select(chatSessions)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<ChatSession> insertChatSession({
+    required String modelId,
+    String title = 'New chat',
+  }) async {
+    final id = const Uuid().v4();
+    final now = DateTime.now();
+    await into(chatSessions).insert(
+      ChatSessionsCompanion.insert(
+        id: id,
+        title: Value(title),
+        modelId: modelId,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    return (select(chatSessions)..where((t) => t.id.equals(id))).getSingle();
+  }
+
+  Future<void> updateChatSession({
+    required String id,
+    String? title,
+    DateTime? updatedAt,
+  }) async {
+    await (update(chatSessions)..where((t) => t.id.equals(id))).write(
+      ChatSessionsCompanion(
+        title: title == null ? const Value.absent() : Value(title),
+        updatedAt: updatedAt == null
+            ? const Value.absent()
+            : Value(updatedAt),
+      ),
+    );
+  }
+
+  Future<void> deleteChatSession(String id) async {
+    await (delete(chatMessages)..where((t) => t.sessionId.equals(id))).go();
+    await (delete(chatSessions)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<ChatMessage> insertChatMessage({
+    required String sessionId,
+    required String role,
+    required String content,
+    String? toolName,
+  }) async {
+    final id = const Uuid().v4();
+    final now = DateTime.now();
+    await into(chatMessages).insert(
+      ChatMessagesCompanion.insert(
+        id: id,
+        sessionId: sessionId,
+        role: role,
+        content: content,
+        createdAt: now,
+        toolName: toolName == null ? const Value.absent() : Value(toolName),
+      ),
+    );
+    return (select(chatMessages)..where((t) => t.id.equals(id))).getSingle();
+  }
+
+  Future<void> deleteChatMessagesInSession(String sessionId) async {
+    await (delete(chatMessages)..where((t) => t.sessionId.equals(sessionId)))
+        .go();
   }
 }
 
