@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/chat_message.dart';
+import '../../theme/linkvault_design.dart';
 import 'widgets/chat_ai_glow.dart';
 import 'widgets/chat_thinking_tile.dart';
 import 'widgets/chat_tool_call_tile.dart';
@@ -64,11 +65,14 @@ class ChatMessageTile extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.82,
         ),
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 16),
+        margin: const EdgeInsets.symmetric(
+          vertical: LinkvaultDesign.spaceXs,
+          horizontal: LinkvaultDesign.spaceLg,
+        ),
         child: isUser
             ? DecoratedBox(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: LinkvaultDesign.radiusCard,
                   color: scheme.onSurface.withValues(alpha: 0.08),
                   border: Border.all(
                     color: scheme.onSurface.withValues(alpha: 0.12),

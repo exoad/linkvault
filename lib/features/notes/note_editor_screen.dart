@@ -3,7 +3,7 @@ import '../../app_scope.dart';
 import '../../data/note_repository.dart';
 import '../../hub/modules/notes_hub_module.dart';
 import '../../models/note.dart';
-import '../../theme/hub_app_colors.dart';
+import '../../ui/linkvault_ui.dart';
 import '../../widgets/linkvault_animated_ambient.dart';
 
 class NoteEditorScreen extends StatefulWidget {
@@ -104,8 +104,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         if (didPop) return;
         await _handleBack();
       },
-      child: Scaffold(
-          backgroundColor: Colors.transparent,
+      child: LinkvaultAmbientScaffold(
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
             leading: BackButton(onPressed: _handleBack),
             title: Text(_isEditing ? 'Edit note' : 'New note'),
@@ -129,7 +129,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             ],
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            padding: EdgeInsets.fromLTRB(
+              LinkvaultDesign.spaceLg,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + LinkvaultDesign.spaceSm,
+              LinkvaultDesign.spaceLg,
+              LinkvaultDesign.space2xl,
+            ),
             children: [
               TextField(
                 controller: _titleController,

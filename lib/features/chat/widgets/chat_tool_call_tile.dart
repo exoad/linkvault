@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../ai/chat/tool_message_payload.dart';
+import '../../../theme/linkvault_design.dart';
 import '../../../theme/linkvault_typography.dart';
 import 'chat_ai_glow.dart';
 
@@ -32,12 +33,15 @@ class ChatToolCallTile extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.9,
         ),
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 16),
+        margin: const EdgeInsets.symmetric(
+          vertical: LinkvaultDesign.spaceXs,
+          horizontal: LinkvaultDesign.spaceLg,
+        ),
         child: ChatAiGlowFrame(
           phase: phase,
           pulsing: running,
           intensity: running ? 0.85 : 0.65,
-          borderRadius: 14,
+          borderRadius: LinkvaultDesign.radiusMd,
           borderWidth: 1,
           fillColor: scheme.surface.withValues(alpha: 0.6),
           child: Padding(

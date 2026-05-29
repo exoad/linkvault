@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../animations/list_entrance.dart';
+import '../../ui/linkvault_ui.dart';
 import 'appearance_section.dart';
 import 'update_section.dart';
 
@@ -11,18 +11,17 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final padding = MediaQuery.paddingOf(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
+    return LinkvaultAmbientScaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Settings'),
       ),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
-          16,
-          MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
-          16,
-          16 + padding.bottom,
+          LinkvaultDesign.spaceLg,
+          MediaQuery.paddingOf(context).top + kToolbarHeight + LinkvaultDesign.spaceSm,
+          LinkvaultDesign.spaceLg,
+          LinkvaultDesign.spaceLg + padding.bottom,
         ),
         children: [
           const UpdateSection().listEntrance(context, index: 0),

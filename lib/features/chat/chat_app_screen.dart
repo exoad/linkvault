@@ -8,10 +8,7 @@ import '../../ai/runtime/local_llm_runtime.dart';
 import '../../app_scope.dart';
 import '../../hub/modules/chat_hub_module.dart';
 import '../../models/chat_message.dart';
-import '../../theme/hub_app_colors.dart';
-import '../../theme/linkvault_typography.dart';
-import '../../widgets/hub_app_back_button.dart';
-import '../../widgets/linkvault_ambient_background.dart';
+import '../../ui/linkvault_ui.dart';
 import '../../widgets/linkvault_animated_ambient.dart';
 import 'chat_drawer.dart';
 import 'chat_input_bar.dart';
@@ -183,22 +180,12 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   }
 
   Future<void> _deleteSession(String sessionId) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showLinkvaultConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete chat?'),
-        content: const Text('This conversation will be removed from this device.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete chat?',
+      message: 'This conversation will be removed from this device.',
+      confirmLabel: 'Delete',
+      destructive: true,
     );
     if (confirmed != true || !mounted) return;
     await _chat.deleteSession(sessionId);
@@ -210,25 +197,13 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   Future<void> _compressChat() async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showLinkvaultConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Compress conversation?'),
-        content: const Text(
+      title: 'Compress conversation?',
+      message:
           'Older messages are merged into a short summary. '
           'The last 8 turns stay intact to free context.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Compress'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Compress',
     );
     if (confirmed != true || !mounted) return;
     setState(() => _phase = _ChatUiPhase.loading);
@@ -258,22 +233,12 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   Future<void> _clearSession() async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showLinkvaultConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear conversation?'),
-        content: const Text('Messages in this chat will be removed from this device.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
+      title: 'Clear conversation?',
+      message: 'Messages in this chat will be removed from this device.',
+      confirmLabel: 'Clear',
+      destructive: true,
     );
     if (confirmed != true || !mounted) return;
     await _chat.clearSessionMessages(sessionId);
@@ -402,10 +367,8 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
   }
 
   void _openSettings() {
-    showModalBottomSheet<void>(
+    showAppBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => ChatSettingsSheet(chat: _chat),
     );
   }
@@ -478,17 +441,50 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
         ],
       ),
       body: switch (_phase) {
-        _ChatUiPhase.checking || _ChatUiPhase.loading => Center(
-            child: _GlowingLoader(phase: phase),
+        _ChatUiPhase.checking || _ChatUiPhase.loading => LinkvaultHubLoader(
+            app: _app,
           ),
-        _ChatUiPhase.needsDownload => _DownloadCard(
-            onDownload: _downloadModel,
-            error: _error,
+        _ChatUiPhase.needsDownload => LinkvaultHubPanel(
+            app: _app,
+            icon: PhosphorIcons.robot,
+            title: 'Download Gemma 4 E2B',
+            subtitle:
+                '~2.6 GB on-device model. Inference stays local; web is only used for tools.',
+            errorMessage: _error,
+            primaryAction: FilledButton.icon(
+              onPressed: _downloadModel,
+              icon: PhosphorIcon(PhosphorIcons.downloadSimple),
+              label: const Text('Download model'),
+            ),
           ),
-        _ChatUiPhase.downloading => _DownloadingCard(progress: _downloadProgress),
-        _ChatUiPhase.error => _ErrorCard(
-            message: _error ?? 'Unknown error',
-            onRetry: _bootstrap,
+        _ChatUiPhase.downloading => LinkvaultHubPanel(
+            app: _app,
+            icon: PhosphorIcons.downloadSimple,
+            title: 'Downloading… $_downloadProgress%',
+            child: Builder(
+              builder: (context) {
+                final hub = HubAppColors.palette(_app, phase);
+                return SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CircularProgressIndicator(
+                    value: _downloadProgress > 0 ? _downloadProgress / 100 : null,
+                    color: hub.primary,
+                    backgroundColor: hub.secondary.withValues(alpha: 0.2),
+                  ),
+                );
+              },
+            ),
+          ),
+        _ChatUiPhase.error => LinkvaultHubPanel(
+            app: _app,
+            icon: PhosphorIcons.warningCircle,
+            title: 'Something went wrong',
+            subtitle: _error ?? 'Unknown error',
+            primaryAction: FilledButton(
+              onPressed: _bootstrap,
+              child: const Text('Retry'),
+            ),
           ),
         _ChatUiPhase.ready when sessionId != null => Column(
             children: [
@@ -501,7 +497,14 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
                       builder: (context, snapshot) {
                         final messages = _visibleMessages(snapshot.data ?? []);
                         if (messages.isEmpty && !_isGenerating) {
-                          return _ChatEmptyState(phase: phase);
+                          return LinkvaultHubPanel(
+                            app: _app,
+                            icon: PhosphorIcons.sparkle,
+                            title: 'On-device AI',
+                            subtitle:
+                                'Ask anything — inference stays local. '
+                                'Tools can search the web or open links.',
+                          );
                         }
                         return ListView.builder(
                           controller: _scrollController,
@@ -549,210 +552,6 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
         _ => const SizedBox.shrink(),
       },
     ),
-    );
-  }
-}
-
-class _ChatEmptyState extends StatelessWidget {
-  const _ChatEmptyState({required this.phase});
-
-  final double phase;
-
-  @override
-  Widget build(BuildContext context) {
-    final glow = ChatAiGlowColors.at(phase);
-    final scheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: ChatAiGlowFrame(
-          phase: phase,
-          pulsing: true,
-          intensity: 0.9,
-          borderRadius: 24,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  PhosphorIcons.sparkle,
-                  size: 36,
-                  color: glow.primary.withValues(alpha: 0.95),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'On-device AI',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: glow.secondary.withValues(alpha: 0.95),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Ask anything — inference stays local. Tools can search the web or open links.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.65),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DownloadCard extends StatelessWidget {
-  const _DownloadCard({required this.onDownload, this.error});
-
-  final VoidCallback onDownload;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    final phase = ChatAiGlowScope.phaseOf(context);
-    final glow = ChatAiGlowColors.at(phase);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: ChatAiGlowFrame(
-          phase: phase,
-          pulsing: true,
-          intensity: 1,
-          borderRadius: 24,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                PhosphorIcon(
-                  PhosphorIcons.robot,
-                  size: 48,
-                  color: glow.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Download Gemma 4 E2B',
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '~3 GB on-device model. Inference stays local; web is only used for tools.',
-                  textAlign: TextAlign.center,
-                ),
-                if (error != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: onDownload,
-                  icon: PhosphorIcon(PhosphorIcons.downloadSimple),
-                  label: const Text('Download model'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DownloadingCard extends StatelessWidget {
-  const _DownloadingCard({required this.progress});
-
-  final int progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final phase = ChatAiGlowScope.phaseOf(context);
-    final glow = ChatAiGlowColors.at(phase);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: ChatAiGlowFrame(
-          phase: phase,
-          pulsing: true,
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: CircularProgressIndicator(
-                    value: progress > 0 ? progress / 100 : null,
-                    color: glow.primary,
-                    backgroundColor: glow.secondary.withValues(alpha: 0.2),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text('Downloading… $progress%'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlowingLoader extends StatelessWidget {
-  const _GlowingLoader({required this.phase});
-
-  final double phase;
-
-  @override
-  Widget build(BuildContext context) {
-    final glow = ChatAiGlowColors.at(phase, pulse: 1);
-
-    return Container(
-      width: 52,
-      height: 52,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: glow.bubbleShadows(intensity: 1.1, pulse: 1),
-      ),
-      child: CircularProgressIndicator(
-        strokeWidth: 2.5,
-        color: glow.primary,
-      ),
-    );
-  }
-}
-
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
     );
   }
 }

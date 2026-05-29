@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-
 import '../../ai/chat/chat_service.dart';
 import '../../ai/models/chat_model_registry.dart';
 import '../../ai/runtime/inference_backend.dart';
+import '../../ui/linkvault_ui.dart';
 
 class ChatSettingsSheet extends StatefulWidget {
   const ChatSettingsSheet({super.key, required this.chat});
@@ -58,7 +58,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
     await widget.chat.backendPrefs.setBackend(backend);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Backend: ${backend.label}. Reloading model…')),
+        SnackBar(content: Text('Backend: ${backend.label}. Reloading…')),
       );
     }
     try {
@@ -82,26 +82,15 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
   }
 
   Future<void> _deleteModel() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showLinkvaultConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete model?'),
-        content: const Text(
-          'Removes on-device weights. Download again before chatting.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete model?',
+      message:
+          'Removes on-device weights. You will need to download again before chatting.',
+      confirmLabel: 'Delete',
+      destructive: true,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     setState(() => _busy = true);
     try {
@@ -123,19 +112,14 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
     final model = ChatModelRegistry.defaultModel;
     final docsFuture = getApplicationDocumentsDirectory();
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Model & inference', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 20),
-              Text('Backend', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 8),
-              SegmentedButton<InferenceBackend>(
+    return LinkvaultSheetBody(
+      title: 'Model & inference',
+      children: [
+        SettingsGroup(
+          title: 'Backend',
+          children: [
+            LinkvaultSheetTile(
+              child: SegmentedButton<InferenceBackend>(
                 segments: const [
                   ButtonSegment(value: InferenceBackend.gpu, label: Text('GPU')),
                   ButtonSegment(value: InferenceBackend.cpu, label: Text('CPU')),
@@ -145,20 +129,27 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                     ? null
                     : (value) => _setBackend(value.first),
               ),
-              const SizedBox(height: 20),
-              _SliderRow(
+            ),
+          ],
+        ),
+        SizedBox(height: LinkvaultDesign.spaceXl),
+        SettingsGroup(
+          title: 'Sampling',
+          children: [
+            LinkvaultSheetTile(
+              child: LinkvaultSliderTile(
                 label: 'Temperature',
                 value: _temperature,
                 min: 0.1,
                 max: 2.0,
                 divisions: 19,
                 display: _temperature.toStringAsFixed(2),
-                onChanged: _busy
-                    ? null
-                    : (v) => setState(() => _temperature = v),
+                onChanged: _busy ? null : (v) => setState(() => _temperature = v),
                 onChangeEnd: (_) => _persistInference(),
               ),
-              _SliderRow(
+            ),
+            LinkvaultSheetTile(
+              child: LinkvaultSliderTile(
                 label: 'Top P',
                 value: _topP,
                 min: 0.05,
@@ -168,7 +159,9 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 onChanged: _busy ? null : (v) => setState(() => _topP = v),
                 onChangeEnd: (_) => _persistInference(),
               ),
-              _SliderRow(
+            ),
+            LinkvaultSheetTile(
+              child: LinkvaultSliderTile(
                 label: 'Top K',
                 value: _topK,
                 min: 1,
@@ -178,7 +171,9 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 onChanged: _busy ? null : (v) => setState(() => _topK = v),
                 onChangeEnd: (_) => _persistInference(),
               ),
-              _SliderRow(
+            ),
+            LinkvaultSheetTile(
+              child: LinkvaultSliderTile(
                 label: 'Max output tokens',
                 value: _maxOutput,
                 min: 64,
@@ -188,105 +183,74 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 onChanged: _busy ? null : (v) => setState(() => _maxOutput = v),
                 onChangeEnd: (_) => _persistInference(),
               ),
-              _SliderRow(
+            ),
+            LinkvaultSheetTile(
+              child: LinkvaultSliderTile(
                 label: 'Context limit',
                 value: _contextLimit,
                 min: 2048,
                 max: 16384,
                 divisions: 14,
                 display: _contextLimit.round().toString(),
-                onChanged: _busy
-                    ? null
-                    : (v) => setState(() => _contextLimit = v),
+                onChanged: _busy ? null : (v) => setState(() => _contextLimit = v),
                 onChangeEnd: (_) => _persistInference(),
               ),
-              const SizedBox(height: 16),
-              Text('Model', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 4),
-              Text('${model.displayName} (${model.sizeLabel})'),
-              const SizedBox(height: 20),
-              Text('Hugging Face token', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 4),
-              const Text(
-                'Optional for gated downloads.',
-                style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        SizedBox(height: LinkvaultDesign.spaceXl),
+        SettingsGroup(
+          title: 'Model',
+          children: [
+            LinkvaultSheetTile(
+              child: Text('${model.displayName} (${model.sizeLabel})'),
+            ),
+          ],
+        ),
+        SizedBox(height: LinkvaultDesign.spaceXl),
+        SettingsGroup(
+          title: 'Download',
+          children: [
+            LinkvaultSheetTile(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _tokenController,
+                    decoration: const InputDecoration(
+                      hintText: 'hf_… (optional)',
+                      isDense: true,
+                    ),
+                    obscureText: true,
+                    autocorrect: false,
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _saveToken,
+                      child: const Text('Save token'),
+                    ),
+                  ),
+                  FutureBuilder(
+                    future: docsFuture,
+                    builder: (context, snapshot) {
+                      return Text(
+                        'Storage: ${snapshot.data?.path ?? '…'}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      );
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _tokenController,
-                decoration: const InputDecoration(hintText: 'hf_…', isDense: true),
-                obscureText: true,
-                autocorrect: false,
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(onPressed: _saveToken, child: const Text('Save token')),
-              ),
-              FutureBuilder(
-                future: docsFuture,
-                builder: (context, snapshot) {
-                  final path = snapshot.data?.path ?? '…';
-                  return Text(
-                    'Storage: $path',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton(
+            ),
+            LinkvaultSheetTile(
+              child: OutlinedButton(
                 onPressed: _busy ? null : _deleteModel,
                 child: const Text('Delete downloaded model'),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SliderRow extends StatelessWidget {
-  const _SliderRow({
-    required this.label,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.divisions,
-    required this.display,
-    required this.onChanged,
-    required this.onChangeEnd,
-  });
-
-  final String label;
-  final double value;
-  final double min;
-  final double max;
-  final int divisions;
-  final String display;
-  final ValueChanged<double>? onChanged;
-  final ValueChanged<double> onChangeEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Text(label, style: Theme.of(context).textTheme.titleSmall),
-            const Spacer(),
-            Text(display, style: Theme.of(context).textTheme.bodySmall),
+            ),
           ],
         ),
-        Slider(
-          value: value.clamp(min, max),
-          min: min,
-          max: max,
-          divisions: divisions,
-          onChanged: onChanged,
-          onChangeEnd: onChangeEnd,
-        ),
-        const SizedBox(height: 4),
       ],
     );
   }

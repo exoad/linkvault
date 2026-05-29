@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../ai/chat/chat_service.dart';
+import '../../hub/modules/chat_hub_module.dart';
 import '../../models/chat_message.dart';
-import '../../theme/linkvault_typography.dart';
-import 'widgets/chat_ai_glow.dart';
+import '../../ui/linkvault_ui.dart';
+import '../../widgets/linkvault_animated_ambient.dart';
 
 class ChatDrawer extends StatelessWidget {
   const ChatDrawer({
@@ -22,35 +23,49 @@ class ChatDrawer extends StatelessWidget {
   final VoidCallback onNewChat;
   final ValueChanged<String> onDeleteSession;
 
+  static const _app = ChatHubModule.appDefinition;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final phase = ChatAiGlowScope.phaseOf(context);
-    final glow = ChatAiGlowColors.at(phase);
+    final phase = AmbientMotionScope.maybeOf(context)?.value ?? 0.0;
+    final hub = HubAppColors.palette(_app, phase);
 
     return Drawer(
-      backgroundColor: scheme.surface.withValues(alpha: 0.97),
+      backgroundColor: Colors.transparent,
       child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
-              child: Row(
-                children: [
-                  PhosphorIcon(
-                    PhosphorIcons.chatsCircle,
-                    color: glow.primary,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 10),
-                  Text('Chats', style: Theme.of(context).textTheme.titleMedium),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.all(LinkvaultDesign.spaceMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  LinkvaultDesign.spaceSm,
+                  LinkvaultDesign.spaceSm,
+                  LinkvaultDesign.spaceSm,
+                  LinkvaultDesign.spaceMd,
+                ),
+                child: Row(
+                  children: [
+                    LinkvaultIconChip(
+                      dimension: 40,
+                      color: hub.primary,
+                      child: PhosphorIcon(
+                        PhosphorIcons.chatsCircle,
+                        color: hub.primary,
+                        size: 20,
+                      ),
+                    ),
+                    SizedBox(width: LinkvaultDesign.spaceMd),
+                    Text(
+                      'Chats',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: FilledButton.icon(
+              FilledButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
                   onNewChat();
@@ -58,43 +73,44 @@ class ChatDrawer extends StatelessWidget {
                 icon: PhosphorIcon(PhosphorIcons.plus, size: 18),
                 label: const Text('New chat'),
               ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: StreamBuilder<List<ChatSessionModel>>(
-                stream: chat.watchSessions(),
-                builder: (context, snapshot) {
-                  final sessions = snapshot.data ?? [];
-                  if (sessions.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No conversations yet',
-                        style: LinkvaultTypography.meta(scheme),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    itemCount: sessions.length,
-                    itemBuilder: (context, index) {
-                      final session = sessions[index];
-                      final selected = session.id == activeSessionId;
-                      return _SessionTile(
-                        session: session,
-                        selected: selected,
-                        glow: glow,
-                        onTap: () {
-                          Navigator.pop(context);
-                          onSessionSelected(session.id);
-                        },
-                        onDelete: () => onDeleteSession(session.id),
+              SizedBox(height: LinkvaultDesign.spaceMd),
+              Expanded(
+                child: StreamBuilder<List<ChatSessionModel>>(
+                  stream: chat.watchSessions(),
+                  builder: (context, snapshot) {
+                    final sessions = snapshot.data ?? [];
+                    if (sessions.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No conversations yet',
+                          style: LinkvaultTypography.meta(scheme),
+                        ),
                       );
-                    },
-                  );
-                },
+                    }
+                    return ListView.separated(
+                      itemCount: sessions.length,
+                      separatorBuilder: (_, _) =>
+                          SizedBox(height: LinkvaultDesign.spaceXs),
+                      itemBuilder: (context, index) {
+                        final session = sessions[index];
+                        final selected = session.id == activeSessionId;
+                        return _SessionTile(
+                          session: session,
+                          selected: selected,
+                          hub: hub,
+                          onTap: () {
+                            Navigator.pop(context);
+                            onSessionSelected(session.id);
+                          },
+                          onDelete: () => onDeleteSession(session.id),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -105,53 +121,61 @@ class _SessionTile extends StatelessWidget {
   const _SessionTile({
     required this.session,
     required this.selected,
-    required this.glow,
+    required this.hub,
     required this.onTap,
     required this.onDelete,
   });
 
   final ChatSessionModel session;
   final bool selected;
-  final ChatAiGlowColors glow;
+  final HubAppPalette hub;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final subtitle = _formatWhen(session.updatedAt);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Material(
-        color: selected
-            ? glow.primary.withValues(alpha: 0.12)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: ListTile(
-          onTap: onTap,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text(
-            session.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+    return LinkvaultSurface(
+      onTap: onTap,
+      borderRadius: LinkvaultDesign.radiusControl,
+      color: selected
+          ? hub.primary.withValues(alpha: 0.14)
+          : scheme.surfaceContainerLow.withValues(alpha: 0.5),
+      padding: const EdgeInsets.symmetric(
+        horizontal: LinkvaultDesign.spaceMd,
+        vertical: LinkvaultDesign.spaceSm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  session.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  _formatWhen(session.updatedAt),
+                  style: LinkvaultTypography.meta(scheme),
+                ),
+              ],
             ),
           ),
-          subtitle: Text(
-            subtitle,
-            style: LinkvaultTypography.meta(scheme),
-          ),
-          trailing: IconButton(
+          AliveIconButton(
+            onPressed: onDelete,
             icon: PhosphorIcon(
               PhosphorIcons.trash,
               size: 18,
               color: scheme.onSurface.withValues(alpha: 0.45),
             ),
-            onPressed: onDelete,
           ),
-        ),
+        ],
       ),
     );
   }

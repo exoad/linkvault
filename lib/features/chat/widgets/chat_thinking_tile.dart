@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../../theme/linkvault_design.dart';
 import '../../../theme/linkvault_typography.dart';
 import 'chat_ai_glow.dart';
 
@@ -30,12 +31,15 @@ class ChatThinkingTile extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.9,
         ),
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        margin: const EdgeInsets.symmetric(
+          vertical: LinkvaultDesign.spaceSm,
+          horizontal: LinkvaultDesign.spaceLg,
+        ),
         child: ChatAiGlowFrame(
           phase: phase,
           pulsing: streaming,
           intensity: 0.55,
-          borderRadius: 14,
+          borderRadius: LinkvaultDesign.radiusMd,
           borderWidth: 1,
           fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
           child: Column(

@@ -53,7 +53,23 @@ Opening a module uses [`AppShellScope.openModule`](lib/shell/app_shell.dart) so 
 - [`AmbientShell`](lib/widgets/linkvault_ambient_background.dart) wraps the app in `MaterialApp.builder`.
 - Feature scaffolds use [`LinkvaultAmbientScaffold`](lib/widgets/linkvault_ambient_background.dart) (transparent; glow shows through).
 - Theme: dark-only, monochrome base — [`LinkvaultMonochrome`](lib/theme/linkvault_monochrome.dart). Accents cycle via [`AmbientLavaPalette`](lib/theme/ambient_lava_palette.dart).
-- Chat uses additional AI glow widgets under [`lib/features/chat/widgets/`](lib/features/chat/widgets/).
+- Chat uses additional AI glow widgets under [`lib/features/chat/widgets/`](lib/features/chat/widgets/) for streaming bubbles only; empty/download/error states use the shared hub panels.
+
+### Unified UI library
+
+Import [`package:linkvault/ui/linkvault_ui.dart`](lib/ui/linkvault_ui.dart) for the canonical design system:
+
+| Use | Widget / API |
+|-----|----------------|
+| Tokens | `LinkvaultDesign`, `LinkvaultTypography`, `HubAppColors.palette(app, phase)` |
+| Surfaces | `LinkvaultSurface`, `LinkvaultIconChip`, `SettingsGroup` |
+| Shell | `LinkvaultAmbientScaffold`, `HubAppBackButton` |
+| Empty / download / error | `LinkvaultHubPanel`, `LinkvaultHubLoader` |
+| Sheets | `showAppBottomSheet`, `LinkvaultSheetBody`, `LinkvaultSliderTile` |
+| Dialogs | `showAnimatedDialog`, `showLinkvaultConfirmDialog` |
+| Motion | `AlivePressable`, `AliveIconButton`, `listEntrance` |
+
+Avoid raw `showModalBottomSheet`, ad-hoc `AlertDialog`, and opaque scaffolds on feature screens.
 
 ### Data layer
 
