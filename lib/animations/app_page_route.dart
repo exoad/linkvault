@@ -6,8 +6,7 @@ import '../theme/app_motion.dart';
 class AppPageRoute<T> extends PageRouteBuilder<T> {
   AppPageRoute({required this.child})
       : super(
-          opaque: false,
-          barrierColor: Colors.transparent,
+          opaque: true,
           pageBuilder: (context, animation, secondaryAnimation) => child,
           transitionDuration: AppMotion.slow,
           reverseTransitionDuration: AppMotion.normal,

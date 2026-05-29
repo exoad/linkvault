@@ -8,8 +8,8 @@ abstract final class AppMotion {
   static const Duration slow = Duration(milliseconds: 400);
   static const Duration breathe = Duration(milliseconds: 2400);
 
-  /// Full loop for lava-lamp position drift; color uses a faster multiplier in the painter.
-  static const Duration ambientCycle = Duration(seconds: 32);
+  /// Full loop for top aurora drift and color cycle (slow, in sync with painter).
+  static const Duration ambientCycle = Duration(seconds: 72);
 
   static const Duration staggerStep = Duration(milliseconds: 40);
   static const Duration dialogStaggerStep = Duration(milliseconds: 80);

@@ -78,29 +78,23 @@ class _AppShellState extends State<AppShell> {
       openModule: _openModule,
       closeModule: _closeModule,
       child: AnimatedSwitcher(
-        duration: AppMotion.slow,
+        duration: AppMotion.normal,
         switchInCurve: AppMotion.emphasized,
-        switchOutCurve: AppMotion.emphasized,
+        switchOutCurve: AppMotion.standard,
         transitionBuilder: (child, animation) {
           final curved = CurvedAnimation(
             parent: animation,
             curve: AppMotion.emphasized,
           );
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.08, 0),
-              end: Offset.zero,
-            ).animate(curved),
-            child: child,
-          );
-        },
-        layoutBuilder: (currentChild, previousChildren) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ...previousChildren,
-              ?currentChild,
-            ],
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.06, 0),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
           );
         },
         child: KeyedSubtree(
