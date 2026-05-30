@@ -14,14 +14,11 @@ import 'local_llm_runtime.dart';
 /// On-device LLM via Kotlin (LiteRT-LM / MediaPipe). Inference stays off the Dart isolate.
 final class NativeLlmRuntime implements LocalLlmRuntime {
   NativeLlmRuntime._({
-    required ChatModelDefinition model,
-    required LlmHostGateway host,
-    required bool platformGuard,
-    required bool installBridge,
-  })  : _model = model,
-        _host = host,
-        _platformGuard = platformGuard,
-        _installBridge = installBridge {
+    required this._model,
+    required this._host,
+    required this._platformGuard,
+    required this._installBridge,
+  }) {
     if (_installBridge && _platformGuard && Platform.isAndroid) {
       FlutterLlmBridge.install();
     }
