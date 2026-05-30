@@ -32,7 +32,15 @@ final class FlutterLlmBridge extends FlutterLlmApi {
     _active = _ActiveGeneration(controller);
   }
 
-  void endGeneration() {
+  void endGeneration({String? reason}) {
+    final active = _active;
+    if (active == null) return;
+    if (!active.completer.isCompleted) {
+      final message = reason ?? 'Generation ended unexpectedly';
+      active.controller.add(LlmErrorEvent(message));
+      active.controller.close();
+      active.completer.complete(Exception(message));
+    }
     _active = null;
   }
 

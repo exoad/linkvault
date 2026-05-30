@@ -63,6 +63,9 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
     }
     try {
       await widget.chat.ensureModelReady();
+      if (mounted) {
+        setState(() => _backend = widget.chat.backendPrefs.backend);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

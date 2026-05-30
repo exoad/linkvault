@@ -86,6 +86,16 @@ class _AppShellState extends State<AppShell> {
         duration: AppMotion.fast,
         switchInCurve: AppMotion.decelerate,
         switchOutCurve: AppMotion.standard,
+        layoutBuilder: (currentChild, previousChildren) {
+          return Stack(
+            fit: StackFit.expand,
+            clipBehavior: Clip.hardEdge,
+            children: [
+              ...previousChildren,
+              if (currentChild != null) currentChild,
+            ],
+          );
+        },
         transitionBuilder: (child, animation) {
           return FadeTransition(
             opacity: CurvedAnimation(

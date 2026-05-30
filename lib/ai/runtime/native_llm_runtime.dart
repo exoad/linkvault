@@ -229,7 +229,7 @@ final class NativeLlmRuntime implements LocalLlmRuntime {
   @override
   Future<void> stopGeneration() async {
     await _host.stopGeneration();
-    FlutterLlmBridge.instance.endGeneration();
+    FlutterLlmBridge.instance.endGeneration(reason: 'Generation cancelled');
   }
 
   @override

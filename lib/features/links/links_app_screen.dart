@@ -299,7 +299,7 @@ class _LinksAppScreenState extends State<LinksAppScreen> {
               MediaQuery.paddingOf(context).top + kToolbarHeight + 8;
 
           return CustomScrollView(
-            clipBehavior: Clip.none,
+            clipBehavior: Clip.hardEdge,
             slivers: [
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(16, topPad, 16, 0),

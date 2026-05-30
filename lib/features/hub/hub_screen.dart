@@ -47,7 +47,7 @@ class HubScreen extends StatelessWidget {
         ],
       ),
       body: CustomScrollView(
-        clipBehavior: Clip.none,
+        clipBehavior: Clip.hardEdge,
         slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(16, topPad, 16, 0),
