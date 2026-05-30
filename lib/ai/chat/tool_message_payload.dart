@@ -12,7 +12,7 @@ final class ToolMessagePayload {
   static String encode({required String argsSummary, String? result}) {
     return jsonEncode({
       'args': argsSummary,
-      if (result != null) 'result': result,
+      ...?(result == null ? null : {'result': result}),
     });
   }
 
