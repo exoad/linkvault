@@ -132,13 +132,20 @@ class LinkvaultAmbientScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final surface = Theme.of(context).colorScheme.surface;
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBody: extendBody,
       extendBodyBehindAppBar: extendBodyBehindAppBar,
       appBar: appBar,
       drawer: drawer,
-      body: body,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          ColoredBox(color: surface),
+          body,
+        ],
+      ),
       floatingActionButton: floatingActionButton,
       floatingActionButtonLocation: floatingActionButtonLocation,
     );

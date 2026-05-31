@@ -92,10 +92,16 @@ final class ChatService {
   Future<void> uninstallModel() => runtime.uninstallModel();
 
   Future<void> ensureModelReady() async {
-    await runtime.ensureReady(
-      backend: backendPrefs.backend,
-      generationConfig: inferencePrefs.toPigeon(),
-    );
+    final backend = backendPrefs.backend;
+    try {
+      await runtime.ensureReady(
+        backend: backend,
+        generationConfig: inferencePrefs.toPigeon(),
+      );
+    } catch (e) {
+      if (backend != InferenceBackend.gpu) rethrow;
+      await _fallbackToCpu();
+    }
   }
 
   Future<void> applyInferenceSettings() async {
@@ -258,8 +264,9 @@ final class ChatService {
             await repository.touchSession(sessionId, preview: trimmed);
           }
           yield LlmDoneEvent(content);
-        case LlmErrorEvent():
-          yield event;
+        case LlmErrorEvent(:final message):
+          final updated = await _maybeFallbackToCpu(message, sessionId);
+          yield LlmErrorEvent(updated);
       }
     }
   }
@@ -269,5 +276,47 @@ final class ChatService {
   Future<void> clearSessionMessages(String sessionId) async {
     await repository.deleteMessagesInSession(sessionId);
     await runtime.dispose();
+  }
+
+  Future<void> _fallbackToCpu() async {
+    final previousBackend = backendPrefs.backend;
+    try {
+      await runtime.ensureReady(
+        backend: InferenceBackend.cpu,
+        generationConfig: inferencePrefs.toPigeon(),
+      );
+      await backendPrefs.setBackend(InferenceBackend.cpu);
+    } catch (_) {
+      if (previousBackend != InferenceBackend.cpu) {
+        await backendPrefs.setBackend(previousBackend);
+      }
+      rethrow;
+    }
+  }
+
+  Future<String> _maybeFallbackToCpu(String message, String sessionId) async {
+    final backend = runtime.activeBackend ?? backendPrefs.backend;
+    if (backend != InferenceBackend.gpu) return message;
+    if (!_shouldFallback(message)) return message;
+    try {
+      await _fallbackToCpu();
+      await prepareSession(sessionId);
+      return 'GPU inference failed — switched to CPU';
+    } catch (e) {
+      return '$message (CPU fallback failed: $e)';
+    }
+  }
+
+  bool _shouldFallback(String message) {
+    final code = _errorCode(message);
+    return code == 'GENERATION_FAILED' ||
+        code == 'NOT_LOADED' ||
+        code == 'NO_SESSION';
+  }
+
+  String _errorCode(String message) {
+    final separator = message.indexOf(':');
+    if (separator <= 0) return message.trim();
+    return message.substring(0, separator).trim();
   }
 }

@@ -453,6 +453,7 @@ class _ChatAppScreenState extends State<ChatAppScreen> {
               _draft = null;
               _isGenerating = false;
               _statusError = message;
+              _backendLabel = _chat.backendStatusLabel;
             });
         }
       },
