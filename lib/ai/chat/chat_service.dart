@@ -279,11 +279,19 @@ final class ChatService {
   }
 
   Future<void> _fallbackToCpu() async {
-    await backendPrefs.setBackend(InferenceBackend.cpu);
-    await runtime.ensureReady(
-      backend: InferenceBackend.cpu,
-      generationConfig: inferencePrefs.toPigeon(),
-    );
+    final previousBackend = backendPrefs.backend;
+    try {
+      await runtime.ensureReady(
+        backend: InferenceBackend.cpu,
+        generationConfig: inferencePrefs.toPigeon(),
+      );
+      await backendPrefs.setBackend(InferenceBackend.cpu);
+    } catch (_) {
+      if (previousBackend != InferenceBackend.cpu) {
+        await backendPrefs.setBackend(previousBackend);
+      }
+      rethrow;
+    }
   }
 
   Future<String> _maybeFallbackToCpu(String message) async {
