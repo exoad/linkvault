@@ -265,7 +265,7 @@ final class ChatService {
           }
           yield LlmDoneEvent(content);
         case LlmErrorEvent(:final message):
-          final updated = await _maybeFallbackToCpu(message);
+          final updated = await _maybeFallbackToCpu(message, sessionId);
           yield LlmErrorEvent(updated);
       }
     }
@@ -294,12 +294,13 @@ final class ChatService {
     }
   }
 
-  Future<String> _maybeFallbackToCpu(String message) async {
+  Future<String> _maybeFallbackToCpu(String message, String sessionId) async {
     final backend = runtime.activeBackend ?? backendPrefs.backend;
     if (backend != InferenceBackend.gpu) return message;
     if (!_shouldFallback(message)) return message;
     try {
       await _fallbackToCpu();
+      await prepareSession(sessionId);
       return 'GPU inference failed — switched to CPU';
     } catch (e) {
       return '$message (CPU fallback failed: $e)';
